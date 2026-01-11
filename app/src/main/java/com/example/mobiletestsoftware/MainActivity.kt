@@ -3,14 +3,23 @@ package com.example.mobiletestsoftware
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.lifecycleScope
 import com.example.mobiletestsoftware.ui.theme.MobileTestsoftwareTheme
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 
 // Netzwerk-Logik
 import java.net.DatagramPacket
@@ -24,27 +33,25 @@ class MainActivity : ComponentActivity() {
     private val UDP_PORT = 5005
     private val TCP_PORT = 6000
 
-    // Ein "State", der den Text für das Frontend speichert.
-    // Wenn sich dieser Wert ändert, aktualisiert Compose automatisch die Anzeige.
     private var statusText by mutableStateOf("Warte auf Initialisierung...")
 
+    private var heartbeatJob: Job? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
-        // Startet den Empfang von Bestätigungen im Hintergrund
         startTcpListener()
 
         setContent {
-            // Nutzt das vorbereitete Theme
             MobileTestsoftwareTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    // Dein neues Frontend
-                    TrainControlScreen(
+                    MainLayoutWrapper(
                         status = statusText,
-                        onInitialize = { sendUdpBroadcast("Mobile Testapplication") },
+                        onInitialize = { sendUdpBroadcast("INITIALIZE") },
                         onSendW05 = { sendUdpBroadcast("1 5 2 1 8 W05") }
                     )
                 }
@@ -52,74 +59,33 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    /**
-     * Das UI-Layout in Jetpack Compose.
-     * Es ersetzt die alte activity_main.xml.
-     */
-    @Composable
-    fun TrainControlScreen(
-        status: String,
-        onInitialize: () -> Unit,
-        onSendW05: () -> Unit
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            Text(
-                text = "Zugsteuerung",
-                fontSize = 24.sp,
-                style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.padding(bottom = 20.dp)
-            )
+    override fun onResume() {
+        super.onResume()
+        sendUdpBroadcast("PING_STATUS")
 
-            // Button zum Initialisieren
-            Button(
-                onClick = onInitialize,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Initialize")
-            }
+        startHeartbeat()
+    }
 
-            // Button für Weiche 05
-            Button(
-                onClick = onSendW05,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("WEICHE 05 schalten 1")
-            }
+    override fun onPause() {
+        super.onPause()
+        // Heartbeat sofort stoppen, damit nichts im Hintergrund läuft
+        heartbeatJob?.cancel()
+    }
 
-            // Platzhalter für weitere Buttons, die du noch designen willst
-            OutlinedButton(
-                onClick = { /* Hier Logik für Button 2 ergänzen */ },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("WEICHE 05 schalten 2")
-            }
+    private fun startHeartbeat() {
+        // Sicherstellen, dass nicht zwei Jobs gleichzeitig laufen
+        heartbeatJob?.cancel()
 
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // Die Statusanzeige
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                )
-            ) {
-                Text(
-                    text = status,
-                    modifier = Modifier.padding(20.dp),
-                    fontSize = 18.sp
-                )
+        heartbeatJob = lifecycleScope.launch(Dispatchers.IO) {
+            while (isActive) {
+                sendUdpBroadcast("HEARTBEAT")
+                delay(10000) // 10 Sekunden warten
             }
         }
     }
 
     /**
-     * Sendet Nachrichten per UDP-Broadcast (Logik deines Partners)
+     * Sendet Nachrichten per UDP-Broadcast
      */
     private fun sendUdpBroadcast(message: String) {
         Thread {
@@ -149,7 +115,7 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
-     * Wartet auf TCP-Bestätigungen (Logik deines Partners)
+     * Wartet auf TCP-Bestätigungen
      */
     private fun startTcpListener() {
         Thread {
@@ -176,5 +142,87 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }.start()
+    }
+
+    /**
+     * Der Wrapper mit 10/80/10 Aufteilung mit Beachtung der Systemleisten
+     */
+    @Composable
+    fun MainLayoutWrapper(
+        status: String,
+        onInitialize: () -> Unit,
+        onSendW05: () -> Unit
+    ) {
+        val headerColor = MaterialTheme.colorScheme.surfaceVariant
+        val footerColor = MaterialTheme.colorScheme.surfaceVariant
+
+        Column(modifier = Modifier.fillMaxSize()) {
+            Spacer(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .windowInsetsTopHeight(WindowInsets.statusBars)
+                    .background(headerColor)
+            )
+
+            Surface(
+                modifier = Modifier.weight(0.1f).fillMaxWidth(),
+                color = headerColor
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text("HEADER", fontWeight = FontWeight.Bold)
+                }
+            }
+
+            Box(
+                modifier = Modifier.weight(0.8f).fillMaxWidth()
+            ) {
+                TrainControlScreen(status, onInitialize, onSendW05)
+            }
+
+            Surface(
+                modifier = Modifier.weight(0.1f).fillMaxWidth(),
+                color = footerColor
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Text("FOOTER", fontWeight = FontWeight.Bold)
+                }
+            }
+
+            Spacer(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .windowInsetsBottomHeight(WindowInsets.navigationBars)
+                    .background(footerColor)
+            )
+        }
+    }
+
+    @Composable
+    fun TrainControlScreen(
+        status: String,
+        onInitialize: () -> Unit,
+        onSendW05: () -> Unit
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize().padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Text(text = "Zugsteuerung", fontSize = 24.sp, style = MaterialTheme.typography.headlineMedium)
+
+            Button(onClick = onInitialize, modifier = Modifier.fillMaxWidth()) {
+                Text("Initialize")
+            }
+
+            Button(onClick = onSendW05, modifier = Modifier.fillMaxWidth()) {
+                Text("WEICHE 05 schalten 1")
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Text(text = status, modifier = Modifier.padding(20.dp), fontSize = 18.sp)
+            }
+        }
     }
 }
