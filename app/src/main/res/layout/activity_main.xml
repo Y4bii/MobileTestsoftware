@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:orientation="vertical"
+              android:padding="20dp"
+              android:gravity="center_horizontal"
+              android:layout_width="match_parent"
+              android:layout_height="match_parent">
+
+    <Button
+            android:id="@+id/btnInitialize"
+            android:text="Initialize"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+    <Button
+            android:id="@+id/btnSend"
+            android:text="WEICHE 05 schalten 1"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+    <Button
+            android:id="@+id/btnSend1"
+            android:text="WEICHE 05 schalten 2"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+    <TextView
+            android:id="@+id/statusView"
+            android:text="Status…"
+            android:padding="20dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="18sp" />
+</LinearLayout>
