@@ -2,7 +2,6 @@ package com.example.mobiletestsoftware
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
@@ -13,37 +12,42 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 
+// ############################################################################
+// GLEISPLAN: MITTLERE EBENE
+// ############################################################################
+
+/**
+ * Zeigt den Gleisplan der Ebene "Mittlere Ebene" an.
+ * Diese Ebene nutzt IDs im 200er Bereich (z.B. B201, W201), um sie von den anderen Ebenen zu unterscheiden.
+ *
+ * @param blockStates Map mit dem aktuellen Status der Blöcke (für die Färbung Rot/Grün).
+ * @param onAction    Callback zum Senden von Befehlen an die MainActivity.
+ */
 @SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
-fun MittlereEbene(onAction: (String) -> Unit) {
-    BoxWithConstraints(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White)
-    ) {
-        val screenWidth = maxWidth
-        val screenHeight = maxHeight
+fun MittlereEbene(blockStates: Map<String, Boolean>, onAction: (String) -> Unit) {
+    // BoxWithConstraints liefert uns 'maxWidth' und 'maxHeight'.
+    // Das ist entscheidend, um die Buttons relativ (in %) zur Bildschirmgröße zu positionieren.
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
 
-        // Gleisplan Hintergrund
+        // 1. Hintergrundbild (Gleisplan)
         Image(
             painter = painterResource(id = R.drawable.mittlereebene),
-            contentDescription = "Gleisplan",
+            contentDescription = null,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(10.dp),
-            contentScale = ContentScale.Fit,
+                .padding(10.dp), // Abstand, damit Bild nicht am Displayrand klebt
+            contentScale = ContentScale.Fit, // Skaliert das Bild passend in den Bereich
             alignment = Alignment.Center
         )
 
-        // Weißer Rahmen (überdeckt Bildschatten)
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(10.dp)
-                .border(width = 10.dp, color = Color.White)
-        )
+        // 2. Weißer Rahmen (Optik)
+        // Überdeckt unsaubere Ränder oder Schatten des Bildes.
+        Box(modifier = Modifier.fillMaxSize().padding(10.dp).border(10.dp, Color.White))
 
-        // STRECKENBLÖCKE (B01 - B20)
+        // 3. Definition der STRECKENBLÖCKE (B201 - B220)
+        // Format: Triple("ID", X-Koordinate in %, Y-Koordinate in %)
+        // Diese Blöcke zeigen den Status aus 'blockStates' an (Rot/Grün).
         val blocks = listOf(
             Triple("B201", 0.1f, 0.1f), Triple("B202", 0.1f, 0.15f),
             Triple("B203", 0.1f, 0.2f), Triple("B204", 0.1f, 0.25f),
@@ -56,12 +60,13 @@ fun MittlereEbene(onAction: (String) -> Unit) {
             Triple("B217", 0.1f, 0.9f), Triple("B218", 0.2f, 0.1f),
             Triple("B219", 0.2f, 0.15f), Triple("B220", 0.2f, 0.2f)
         )
-
+        // Erzeugt die Buttons an den berechneten Positionen
         blocks.forEach { (id, x, y) ->
-            TrackBlock(id, x, y, screenWidth, screenHeight, onAction)
+            TrackBlock(id, x, y, maxWidth, maxHeight, blockStates, onAction)
         }
 
-        // WEICHEN (W01 - W12)
+        // 4. Definition der WEICHEN (W201 - W212)
+        // Diese Buttons speichern ihren visuellen Status (Gerade/Abzweig) selbst.
         val switches = listOf(
             Triple("W201", 0.4f, 0.1f), Triple("W202", 0.4f, 0.15f),
             Triple("W203", 0.4f, 0.2f), Triple("W204", 0.4f, 0.25f),
@@ -70,9 +75,9 @@ fun MittlereEbene(onAction: (String) -> Unit) {
             Triple("W209", 0.4f, 0.5f), Triple("W210", 0.4f, 0.55f),
             Triple("W211", 0.4f, 0.6f), Triple("W212", 0.4f, 0.65f)
         )
-
+        // Erzeugt die Weichen-Buttons
         switches.forEach { (id, x, y) ->
-            TrackSwitch(id, x, y, screenWidth, screenHeight, onAction)
+            TrackSwitch(id, x, y, maxWidth, maxHeight, onAction)
         }
     }
 }

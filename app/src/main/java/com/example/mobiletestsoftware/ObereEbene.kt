@@ -2,7 +2,6 @@ package com.example.mobiletestsoftware
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
@@ -13,37 +12,42 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 
+// ############################################################################
+// GLEISPLAN: OBERE EBENE
+// ############################################################################
+
+/**
+ * Zeigt den Gleisplan der Ebene "Obere Ebene".
+ * Diese Ebene verwendet IDs im 100er Bereich (z.B. B101, W101), um Konflikte mit anderen Ebenen zu vermeiden.
+ *
+ * @param blockStates Map mit dem aktuellen Status der Blöcke (für die Färbung Rot/Grün).
+ * @param onAction    Callback zum Senden von Befehlen (z.B. "B1011") an die MainActivity.
+ */
 @SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
-fun ObereEbene(onAction: (String) -> Unit) {
-    BoxWithConstraints(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White)
-    ) {
-        val screenWidth = maxWidth
-        val screenHeight = maxHeight
+fun ObereEbene(blockStates: Map<String, Boolean>, onAction: (String) -> Unit) {
+    // BoxWithConstraints wird benötigt, um die verfügbare Breite/Höhe (maxWidth/maxHeight)
+    // zu ermitteln, damit wir die Elemente prozentual positionieren können.
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
 
-        // Gleisplan Hintergrund
+        // 1. Hintergrundbild (Gleisplan Grafik)
         Image(
             painter = painterResource(id = R.drawable.obereebene),
-            contentDescription = "Gleisplan",
+            contentDescription = null,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(10.dp),
-            contentScale = ContentScale.Fit,
+                .padding(10.dp), // Kleiner Abstand nach innen
+            contentScale = ContentScale.Fit, // Skaliert das Bild proportional
             alignment = Alignment.Center
         )
 
-        // Weißer Rahmen überdeckt Bildschatten
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(2.dp)
-                .border(width = 10.dp, color = Color.White)
-        )
+        // 2. Weißer Rahmen (Optische Verschönerung)
+        // Dient dazu, eventuelle Schattenränder des Bildes zu überdecken.
+        Box(modifier = Modifier.fillMaxSize().padding(2.dp).border(10.dp, Color.White))
 
-        // STRECKENBLÖCKE (B01 - B19)
+        // 3. Definition der STRECKENBLÖCKE (B101 - B119)
+        // Format: Triple("ID", X-Koordinate in %, Y-Koordinate in %)
+        // Diese Buttons reagieren auf den 'blockStates' Status aus der MainActivity.
         val blocks = listOf(
             Triple("B101", 0.1f, 0.1f), Triple("B102", 0.1f, 0.15f),
             Triple("B103", 0.1f, 0.2f), Triple("B104", 0.1f, 0.25f),
@@ -56,24 +60,25 @@ fun ObereEbene(onAction: (String) -> Unit) {
             Triple("B117", 0.1f, 0.9f), Triple("B118", 0.2f, 0.1f),
             Triple("B119", 0.2f, 0.15f)
         )
-
+        // Erzeugt die Block-Buttons an den entsprechenden Positionen
         blocks.forEach { (id, x, y) ->
-            TrackBlock(id, x, y, screenWidth, screenHeight, onAction)
+            TrackBlock(id, x, y, maxWidth, maxHeight, blockStates, onAction)
         }
 
-        // WEICHEN (W01 - W14)
+        // 4. Definition der WEICHEN (W101 - W114)
+        // Diese Buttons speichern ihren visuellen Status lokal, da Weichen immer sofort schalten.
         val switches = listOf(
-            Triple("W01", 0.3f, 0.1f), Triple("W02", 0.3f, 0.15f),
-            Triple("W03", 0.3f, 0.2f), Triple("W04", 0.3f, 0.25f),
-            Triple("W05", 0.3f, 0.3f), Triple("W06", 0.3f, 0.35f),
-            Triple("W07", 0.3f, 0.4f), Triple("W08", 0.3f, 0.45f),
-            Triple("W09", 0.3f, 0.5f), Triple("W10", 0.3f, 0.55f),
-            Triple("W11", 0.3f, 0.6f), Triple("W12", 0.3f, 0.65f),
-            Triple("W13", 0.3f, 0.7f), Triple("W14", 0.3f, 0.75f)
+            Triple("W101", 0.3f, 0.1f), Triple("W102", 0.3f, 0.15f),
+            Triple("W103", 0.3f, 0.2f), Triple("W104", 0.3f, 0.25f),
+            Triple("W105", 0.3f, 0.3f), Triple("W106", 0.3f, 0.35f),
+            Triple("W107", 0.3f, 0.4f), Triple("W108", 0.3f, 0.45f),
+            Triple("W109", 0.3f, 0.5f), Triple("W110", 0.3f, 0.55f),
+            Triple("W111", 0.3f, 0.6f), Triple("W112", 0.3f, 0.65f),
+            Triple("W113", 0.3f, 0.7f), Triple("W114", 0.3f, 0.75f)
         )
-
+        // Erzeugt die Weichen-Buttons
         switches.forEach { (id, x, y) ->
-            TrackSwitch(id, x, y, screenWidth, screenHeight, onAction)
+            TrackSwitch(id, x, y, maxWidth, maxHeight, onAction)
         }
     }
 }
