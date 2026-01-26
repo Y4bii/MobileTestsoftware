@@ -49,16 +49,16 @@ fun ObereEbene(blockStates: Map<String, Boolean>, onAction: (String) -> Unit) {
         // Format: Triple("ID", X-Koordinate in %, Y-Koordinate in %)
         // Diese Buttons reagieren auf den 'blockStates' Status aus der MainActivity.
         val blocks = listOf(
-            Triple("B101", 0.1f, 0.1f), Triple("B102", 0.1f, 0.15f),
-            Triple("B103", 0.1f, 0.2f), Triple("B104", 0.1f, 0.25f),
-            Triple("B105", 0.1f, 0.3f), Triple("B106", 0.1f, 0.35f),
-            Triple("B107", 0.1f, 0.4f), Triple("B108", 0.1f, 0.45f),
-            Triple("B109", 0.1f, 0.5f), Triple("B110", 0.1f, 0.55f),
-            Triple("B111", 0.1f, 0.6f), Triple("B112", 0.1f, 0.65f),
-            Triple("B113", 0.1f, 0.7f), Triple("B114", 0.1f, 0.75f),
-            Triple("B115", 0.1f, 0.8f), Triple("B116", 0.1f, 0.85f),
-            Triple("B117", 0.1f, 0.9f), Triple("B118", 0.2f, 0.1f),
-            Triple("B119", 0.2f, 0.15f)
+            Triple("B100", 0.1f, 0.1f), Triple("B101", 0.1f, 0.15f),
+            Triple("B102", 0.1f, 0.2f), Triple("B103", 0.1f, 0.25f),
+            Triple("B104", 0.1f, 0.3f), Triple("B105", 0.1f, 0.35f),
+            Triple("B106", 0.1f, 0.4f), Triple("B107", 0.1f, 0.45f),
+            Triple("B108", 0.1f, 0.5f), Triple("B109", 0.1f, 0.55f),
+            Triple("B110", 0.1f, 0.6f), Triple("B111", 0.1f, 0.65f),
+            Triple("B112", 0.1f, 0.7f), Triple("B113", 0.1f, 0.75f),
+            Triple("B114", 0.1f, 0.8f), Triple("B115", 0.1f, 0.85f),
+            Triple("B116", 0.1f, 0.9f), Triple("B117", 0.2f, 0.1f),
+            Triple("B118", 0.2f, 0.15f)
         )
         // Erzeugt die Block-Buttons an den entsprechenden Positionen
         blocks.forEach { (id, x, y) ->

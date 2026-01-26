@@ -56,14 +56,14 @@ fun Ablaufberg(blockStates: Map<String, Boolean>, onAction: (String) -> Unit) {
         // Triple Format: (ID, X-Position in %, Y-Position in %)
         // 0.0f = Ganz links/oben, 1.0f = Ganz rechts/unten
         val blocks = listOf(
-            Triple("B001", 0.79f, 0.6775f),
-            Triple("B002", 0.79f, 0.765f),
-            Triple("B003", 0.79f, 0.8485f),
-            Triple("B004", 0.79f, 0.9375f),
-            Triple("B005", 0.5575f, 0.675f),
-            Triple("B007", 0.23f, 0.75f),
-            Triple("B008", 0.23f, 0.83f),
-            Triple("B009", 0.4925f, 0.09f)
+            Triple("B000", 0.79f, 0.6775f),
+            Triple("B001", 0.79f, 0.765f),
+            Triple("B002", 0.79f, 0.8485f),
+            Triple("B003", 0.79f, 0.9375f),
+            Triple("B004", 0.5575f, 0.675f),
+            Triple("B006", 0.23f, 0.75f),
+            Triple("B007", 0.23f, 0.83f),
+            Triple("B008", 0.4925f, 0.09f)
         )
 
         // Erzeugt für jeden Eintrag in der Liste einen Button an der richtigen Stelle
@@ -73,11 +73,11 @@ fun Ablaufberg(blockStates: Map<String, Boolean>, onAction: (String) -> Unit) {
 
         // 4. Definition der WEICHEN
         val switches = listOf(
-            Triple("W001", 0.63f, 0.675f),
-            Triple("W002", 0.6f, 0.83f),
-            Triple("W003", 0.55f, 0.88f),
-            Triple("W004", 0.4925f, 0.675f),
-            Triple("W005", 0.0975f, 0.61f)
+            Triple("W000", 0.63f, 0.675f),
+            Triple("W001", 0.6f, 0.83f),
+            Triple("W002", 0.55f, 0.88f),
+            Triple("W003", 0.4925f, 0.675f),
+            Triple("W004", 0.0975f, 0.61f)
         )
 
         switches.forEach { (id, x, y) ->
