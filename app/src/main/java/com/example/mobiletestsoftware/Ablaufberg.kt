@@ -110,6 +110,14 @@ fun TrackBlock(
     // Ist dieser Block in der zentralen Map als "AN" markiert? (Default: false)
     val isActive = blockStates[id] ?: false
 
+    // Logik für richtige Button-ID
+    val displayId = try {
+        val number = id.substring(2, 4).toInt() + 1
+        "${id.take(1)}${String.format("%02d", number)}"
+    } catch (e: Exception) {
+        id // Fallback, falls die ID mal ein anderes Format hat
+    }
+
     TrackElement(xPos, yPos, screenWidth, screenHeight) {
         Button(
             onClick = {
@@ -133,7 +141,7 @@ fun TrackBlock(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy((-10).dp, Alignment.CenterVertically)
             ) {
-                Text(id, fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Text(displayId, fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color.White)
                 Text(if (isActive) "ON" else "OFF", fontSize = 8.sp, color = Color.White)
             }
         }
@@ -158,6 +166,14 @@ fun TrackSwitch(
     // Lokaler Status für die Anzeige (Gerade vs. Abzweig)
     var isStraight by remember { mutableStateOf(true) }
 
+    // Logik für richtige Button-ID
+    val displayId = try {
+        val number = id.substring(2, 4).toInt() + 1
+        "${id.take(1)}${String.format("%02d", number)}"
+    } catch (e: Exception) {
+        id // Fallback, falls die ID mal ein anderes Format hat
+    }
+
     TrackElement(xPos, yPos, screenWidth, screenHeight) {
         Button(
             onClick = {
@@ -179,7 +195,7 @@ fun TrackSwitch(
                 verticalArrangement = Arrangement.spacedBy((-10).dp, Alignment.CenterVertically)
             ) {
                 Text(
-                    text = id,
+                    text = displayId,
                     fontSize = 9.sp,
                     fontWeight = FontWeight.Bold,
                     color = if (isStraight) Color.White else Color.Black

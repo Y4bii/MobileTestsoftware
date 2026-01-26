@@ -68,13 +68,13 @@ fun ObereEbene(blockStates: Map<String, Boolean>, onAction: (String) -> Unit) {
         // 4. Definition der WEICHEN (W101 - W114)
         // Diese Buttons speichern ihren visuellen Status lokal, da Weichen immer sofort schalten.
         val switches = listOf(
-            Triple("W101", 0.3f, 0.1f), Triple("W102", 0.3f, 0.15f),
-            Triple("W103", 0.3f, 0.2f), Triple("W104", 0.3f, 0.25f),
-            Triple("W105", 0.3f, 0.3f), Triple("W106", 0.3f, 0.35f),
-            Triple("W107", 0.3f, 0.4f), Triple("W108", 0.3f, 0.45f),
-            Triple("W109", 0.3f, 0.5f), Triple("W110", 0.3f, 0.55f),
-            Triple("W111", 0.3f, 0.6f), Triple("W112", 0.3f, 0.65f),
-            Triple("W113", 0.3f, 0.7f), Triple("W114", 0.3f, 0.75f)
+            Triple("W100", 0.3f, 0.1f), Triple("W101", 0.3f, 0.15f),
+            Triple("W102", 0.3f, 0.2f), Triple("W103", 0.3f, 0.25f),
+            Triple("W104", 0.3f, 0.3f), Triple("W105", 0.3f, 0.35f),
+            Triple("W106", 0.3f, 0.4f), Triple("W107", 0.3f, 0.45f),
+            Triple("W108", 0.3f, 0.5f), Triple("W109", 0.3f, 0.55f),
+            Triple("W110", 0.3f, 0.6f), Triple("W111", 0.3f, 0.65f),
+            Triple("W112", 0.3f, 0.7f), Triple("W113", 0.3f, 0.75f)
         )
         // Erzeugt die Weichen-Buttons
         switches.forEach { (id, x, y) ->
