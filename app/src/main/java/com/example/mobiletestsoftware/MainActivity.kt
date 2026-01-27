@@ -12,6 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.lifecycleScope
@@ -290,24 +291,41 @@ class MainActivity : ComponentActivity() {
             Spacer(modifier = Modifier.fillMaxWidth().windowInsetsTopHeight(WindowInsets.statusBars).background(headerColor))
 
             // --- HEADER (Ebenen-Auswahl & Status) ---
-            Surface(modifier = Modifier.weight(0.08f).fillMaxWidth(), color = headerColor) {
+            Surface(modifier = Modifier.weight(0.1f).fillMaxWidth(), color = headerColor) {
                 Box(modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
                     // Linker Bereich: Dropdown Menü
                     Box(modifier = Modifier.align(Alignment.CenterStart)) {
                         Button(
                             onClick = { isLevelMenuExpanded = true },
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00394A)),
-                            modifier = Modifier.height(32.dp).width(150.dp),
+                            modifier = Modifier.height(48.dp).width(200.dp),
                             contentPadding = PaddingValues(0.dp)
                         ) {
-                            Text(text = selectedLevel, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                            Text(text = selectedLevel, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                         }
-                        DropdownMenu(expanded = isLevelMenuExpanded, onDismissRequest = { isLevelMenuExpanded = false }) {
+                        DropdownMenu(
+                            expanded = isLevelMenuExpanded,
+                            onDismissRequest = { isLevelMenuExpanded = false },
+                            modifier = Modifier
+                                .width(200.dp) // Menü genau so breit wie der Button
+                                .background(Color.White)
+                        ) {
                             levels.forEach { level ->
-                                DropdownMenuItem(text = { Text(level, fontSize = 12.sp) }, onClick = { selectedLevel = level; isLevelMenuExpanded = false })
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text = level,
+                                            fontSize = 14.sp,
+                                            modifier = Modifier.fillMaxWidth(),
+                                            textAlign = TextAlign.Center
+                                        )
+                                    },
+                                    onClick = { selectedLevel = level; isLevelMenuExpanded = false }
+                                )
                             }
                         }
                     }
+
                     // Mitte: Status Text
                     Text(text = status, modifier = Modifier.align(Alignment.Center), fontSize = 12.sp)
 
@@ -315,16 +333,16 @@ class MainActivity : ComponentActivity() {
                     Button(
                         onClick = {},
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00394A)),
-                        modifier = Modifier.align(Alignment.CenterEnd).height(32.dp).width(150.dp),
+                        modifier = Modifier.align(Alignment.CenterEnd).height(48.dp).width(200.dp),
                         contentPadding = PaddingValues(0.dp)
                     ) {
-                        Text("PRESETS", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        Text("PRESETS", fontSize = 14.sp, fontWeight = FontWeight.Bold)
                     }
                 }
             }
 
             // --- MAIN CONTENT (Gleispläne) ---
-            Box(modifier = Modifier.weight(0.84f).fillMaxWidth().background(Color.White)) {
+            Box(modifier = Modifier.weight(0.8f).fillMaxWidth().background(Color.White)) {
                 // Lädt die entsprechende Ebene basierend auf der Auswahl
                 // Übergibt die blockStates (Anzeige) und handleTrackAction (Logik)
                 when (selectedLevel) {
@@ -335,7 +353,7 @@ class MainActivity : ComponentActivity() {
             }
 
             // --- FOOTER (Control Buttons) ---
-            Surface(modifier = Modifier.weight(0.08f).fillMaxWidth(), color = footerColor) {
+            Surface(modifier = Modifier.weight(0.1f).fillMaxWidth(), color = footerColor) {
                 Box(modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
                     Row(
                         modifier = Modifier.fillMaxSize(),
@@ -346,10 +364,10 @@ class MainActivity : ComponentActivity() {
                         Button(
                             onClick = { toggleConnection() },
                             colors = ButtonDefaults.buttonColors(containerColor = when { isConnected -> Color(0xFF4CAF50); isConnecting -> Color(0xFFFF9800); else -> Color(0xFFF44336) }),
-                            modifier = Modifier.height(32.dp).width(150.dp),
+                            modifier = Modifier.height(48.dp).width(200.dp),
                             contentPadding = PaddingValues(0.dp)
                         ) {
-                            Text(text = if (isConnected) "CONNECTED" else if (isConnecting) "CONNECTING..." else "DISCONNECTED", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                            Text(text = if (isConnected) "CONNECTED" else if (isConnecting) "CONNECTING..." else "DISCONNECTED", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                         }
 
                         // Rechter Button: START / STOP
@@ -357,14 +375,14 @@ class MainActivity : ComponentActivity() {
                         Button(
                             onClick = { toggleSystemState() },
                             colors = ButtonDefaults.buttonColors(containerColor = if (isEmergencyStopActive) Color(0xFF4CAF50) else Color(0xFFF44336)),
-                            modifier = Modifier.height(32.dp).width(150.dp),
+                            modifier = Modifier.height(48.dp).width(200.dp),
                             contentPadding = PaddingValues(0.dp)
                         ) {
-                            Text(text = if (isEmergencyStopActive) "START" else "STOP", fontWeight = FontWeight.Bold, fontSize = 12.sp, color = Color.White)
+                            Text(text = if (isEmergencyStopActive) "START" else "STOP", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = Color.White)
                         }
                     }
                     // Legende in der Mitte
-                    Text(text = "C = Curved, S = Straight", modifier = Modifier.align(Alignment.Center), fontSize = 10.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
+                    Text(text = "C = Curved, S = Straight", modifier = Modifier.align(Alignment.Center), fontSize = 14.sp, color = Color.Gray, fontWeight = FontWeight.Bold)
                 }
             }
             Spacer(modifier = Modifier.fillMaxWidth().windowInsetsBottomHeight(WindowInsets.navigationBars).background(footerColor))

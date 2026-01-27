@@ -10,44 +10,63 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.times
 
 // ############################################################################
 // GLEISPLAN: OBERE EBENE
 // ############################################################################
 
-/**
- * Zeigt den Gleisplan der Ebene "Obere Ebene".
- * Diese Ebene verwendet IDs im 100er Bereich (z.B. B101, W101), um Konflikte mit anderen Ebenen zu vermeiden.
- *
- * @param blockStates Map mit dem aktuellen Status der Blöcke (für die Färbung Rot/Grün).
- * @param onAction    Callback zum Senden von Befehlen (z.B. "B1011") an die MainActivity.
- */
 @SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
 fun ObereEbene(blockStates: Map<String, Boolean>, onAction: (String) -> Unit) {
-    // BoxWithConstraints wird benötigt, um die verfügbare Breite/Höhe (maxWidth/maxHeight)
-    // zu ermitteln, damit wir die Elemente prozentual positionieren können.
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
 
-        // 1. Hintergrundbild (Gleisplan Grafik)
+        // --- POSITIONIERUNG ---
+        val padding = 10.dp
+
+        val painter = painterResource(id = R.drawable.obereebene)
+        val srcSize = painter.intrinsicSize
+        val imageRatio = if (srcSize.height > 0) srcSize.width / srcSize.height else 1f
+
+        val availableWidth = maxWidth - (padding * 2)
+        val availableHeight = maxHeight - (padding * 2)
+        val containerRatio = if (availableHeight > 0.dp) availableWidth / availableHeight else 1f
+
+        val renderWidth: Dp
+        val renderHeight: Dp
+        val internalOffsetX: Dp
+        val internalOffsetY: Dp
+
+        if (containerRatio > imageRatio) {
+            renderHeight = availableHeight
+            renderWidth = renderHeight * imageRatio
+            internalOffsetX = (availableWidth - renderWidth) / 2
+            internalOffsetY = 0.dp
+        } else {
+            renderWidth = availableWidth
+            renderHeight = renderWidth / imageRatio
+            internalOffsetX = 0.dp
+            internalOffsetY = (availableHeight - renderHeight) / 2
+        }
+
+        val finalOffsetX = padding + internalOffsetX
+        val finalOffsetY = padding + internalOffsetY
+        // ----------------------
+
         Image(
-            painter = painterResource(id = R.drawable.obereebene),
+            painter = painter,
             contentDescription = null,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(10.dp), // Kleiner Abstand nach innen
-            contentScale = ContentScale.Fit, // Skaliert das Bild proportional
+                .padding(padding),
+            contentScale = ContentScale.Fit,
             alignment = Alignment.Center
         )
 
-        // 2. Weißer Rahmen (Optische Verschönerung)
-        // Dient dazu, eventuelle Schattenränder des Bildes zu überdecken.
         Box(modifier = Modifier.fillMaxSize().padding(2.dp).border(10.dp, Color.White))
 
-        // 3. Definition der STRECKENBLÖCKE (B101 - B119)
-        // Format: Triple("ID", X-Koordinate in %, Y-Koordinate in %)
-        // Diese Buttons reagieren auf den 'blockStates' Status aus der MainActivity.
         val blocks = listOf(
             Triple("B100", 0.1f, 0.1f), Triple("B101", 0.1f, 0.15f),
             Triple("B102", 0.1f, 0.2f), Triple("B103", 0.1f, 0.25f),
@@ -60,13 +79,11 @@ fun ObereEbene(blockStates: Map<String, Boolean>, onAction: (String) -> Unit) {
             Triple("B116", 0.1f, 0.9f), Triple("B117", 0.2f, 0.1f),
             Triple("B118", 0.2f, 0.15f)
         )
-        // Erzeugt die Block-Buttons an den entsprechenden Positionen
+
         blocks.forEach { (id, x, y) ->
-            TrackBlock(id, x, y, maxWidth, maxHeight, blockStates, onAction)
+            TrackBlock(id, x, y, renderWidth, renderHeight, finalOffsetX, finalOffsetY, blockStates, onAction)
         }
 
-        // 4. Definition der WEICHEN (W101 - W114)
-        // Diese Buttons speichern ihren visuellen Status lokal, da Weichen immer sofort schalten.
         val switches = listOf(
             Triple("W100", 0.3f, 0.1f), Triple("W101", 0.3f, 0.15f),
             Triple("W102", 0.3f, 0.2f), Triple("W103", 0.3f, 0.25f),
@@ -76,9 +93,9 @@ fun ObereEbene(blockStates: Map<String, Boolean>, onAction: (String) -> Unit) {
             Triple("W110", 0.3f, 0.6f), Triple("W111", 0.3f, 0.65f),
             Triple("W112", 0.3f, 0.7f), Triple("W113", 0.3f, 0.75f)
         )
-        // Erzeugt die Weichen-Buttons
+
         switches.forEach { (id, x, y) ->
-            TrackSwitch(id, x, y, maxWidth, maxHeight, onAction)
+            TrackSwitch(id, x, y, renderWidth, renderHeight, finalOffsetX, finalOffsetY, onAction)
         }
     }
 }

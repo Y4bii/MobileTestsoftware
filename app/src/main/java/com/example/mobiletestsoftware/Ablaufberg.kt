@@ -18,43 +18,62 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.times
 
 // ############################################################################
 // GLEISPLAN: ABLAUFBERG
 // ############################################################################
 
-/**
- * Zeigt den Gleisplan der Ebene "Ablaufberg" an.
- *
- * @param blockStates Eine Map mit dem aktuellen Zustand aller Blöcke (true = AN, false = AUS).
- * Wird benötigt, um die Buttons grün oder rot zu färben.
- * @param onAction    Callback-Funktion, die aufgerufen wird, wenn ein Button gedrückt wird.
- * Sendet die ID (z.B. "B001") und den gewünschten Status an die MainActivity.
- */
 @SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
 fun Ablaufberg(blockStates: Map<String, Boolean>, onAction: (String) -> Unit) {
-    // BoxWithConstraints gibt uns Zugriff auf 'maxWidth' und 'maxHeight' des Bildschirms,
-    // was wir für die prozentuale Positionierung der Buttons brauchen.
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
 
-        // 1. Hintergrundbild laden
+        // --- POSITIONIERUNG ---
+        val padding = 10.dp
+
+        val painter = painterResource(id = R.drawable.ablaufberg)
+        val srcSize = painter.intrinsicSize
+        val imageRatio = if (srcSize.height > 0) srcSize.width / srcSize.height else 1f
+
+        val availableWidth = maxWidth - (padding * 2)
+        val availableHeight = maxHeight - (padding * 2)
+        val containerRatio = if (availableHeight > 0.dp) availableWidth / availableHeight else 1f
+
+        val renderWidth: Dp
+        val renderHeight: Dp
+        val internalOffsetX: Dp
+        val internalOffsetY: Dp
+
+        if (containerRatio > imageRatio) {
+            renderHeight = availableHeight
+            renderWidth = renderHeight * imageRatio
+            internalOffsetX = (availableWidth - renderWidth) / 2
+            internalOffsetY = 0.dp
+        } else {
+            renderWidth = availableWidth
+            renderHeight = renderWidth / imageRatio
+            internalOffsetX = 0.dp
+            internalOffsetY = (availableHeight - renderHeight) / 2
+        }
+
+        val finalOffsetX = padding + internalOffsetX
+        val finalOffsetY = padding + internalOffsetY
+        // ----------------------
+
         Image(
-            painter = painterResource(id = R.drawable.ablaufberg),
+            painter = painter,
             contentDescription = null,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(10.dp), // Kleiner Abstand zum Rand
-            contentScale = ContentScale.Fit, // Bild passt sich an, ohne verzerrt zu werden
+                .padding(padding),
+            contentScale = ContentScale.Fit,
             alignment = Alignment.Center
         )
 
-        // 2. Weißer Rahmen (überdeckt eventuelle Schatten des Bildes am Rand)
-        Box(modifier = Modifier.fillMaxSize().padding(10.dp).border(10.dp, Color.White))
+        Box(modifier = Modifier.fillMaxSize().padding(padding).border(10.dp, Color.White))
 
-        // 3. Definition der STRECKENBLÖCKE
-        // Triple Format: (ID, X-Position in %, Y-Position in %)
-        // 0.0f = Ganz links/oben, 1.0f = Ganz rechts/unten
+        // Definition der STRECKENBLÖCKE
         val blocks = listOf(
             Triple("B000", 0.79f, 0.6775f),
             Triple("B001", 0.79f, 0.765f),
@@ -66,12 +85,11 @@ fun Ablaufberg(blockStates: Map<String, Boolean>, onAction: (String) -> Unit) {
             Triple("B008", 0.4925f, 0.09f)
         )
 
-        // Erzeugt für jeden Eintrag in der Liste einen Button an der richtigen Stelle
         blocks.forEach { (id, x, y) ->
-            TrackBlock(id, x, y, maxWidth, maxHeight, blockStates, onAction)
+            TrackBlock(id, x, y, renderWidth, renderHeight, finalOffsetX, finalOffsetY, blockStates, onAction)
         }
 
-        // 4. Definition der WEICHEN
+        // Definition der WEICHEN
         val switches = listOf(
             Triple("W000", 0.63f, 0.675f),
             Triple("W001", 0.6f, 0.83f),
@@ -81,110 +99,87 @@ fun Ablaufberg(blockStates: Map<String, Boolean>, onAction: (String) -> Unit) {
         )
 
         switches.forEach { (id, x, y) ->
-            TrackSwitch(id, x, y, maxWidth, maxHeight, onAction)
+            TrackSwitch(id, x, y, renderWidth, renderHeight, finalOffsetX, finalOffsetY, onAction)
         }
     }
 }
 
 // ############################################################################
-// HELFER-KOMPONENTEN (BUTTONS)
+// HELFER-KOMPONENTEN
 // ############################################################################
 
-/**
- * Ein Button für einen Streckenblock (Signal/Strom).
- *
- * WICHTIG: Dieser Button speichert seinen Zustand NICHT selbst (kein 'remember').
- * Er liest den Zustand aus der 'blockStates'-Map der MainActivity.
- * Grund: Nur so können wir im Pause-Modus Änderungen anzeigen, ohne sie sofort an die Anlage zu senden.
- */
 @Composable
 fun TrackBlock(
     id: String,
-    xPos: Float, // 0.0 bis 1.0
-    yPos: Float, // 0.0 bis 1.0
-    screenWidth: Dp,
-    screenHeight: Dp,
-    blockStates: Map<String, Boolean>, // Zentraler Speicher
+    xPos: Float,
+    yPos: Float,
+    renderWidth: Dp,
+    renderHeight: Dp,
+    offsetX: Dp,
+    offsetY: Dp,
+    blockStates: Map<String, Boolean>,
     onAction: (String) -> Unit
 ) {
-    // Ist dieser Block in der zentralen Map als "AN" markiert? (Default: false)
     val isActive = blockStates[id] ?: false
 
-    // Logik für richtige Button-ID
     val displayId = try {
         val number = id.substring(2, 4).toInt() + 1
         "${id.take(1)}${String.format("%02d", number)}"
     } catch (e: Exception) {
-        id // Fallback, falls die ID mal ein anderes Format hat
+        id
     }
 
-    TrackElement(xPos, yPos, screenWidth, screenHeight) {
+    TrackElement(xPos, yPos, renderWidth, renderHeight, offsetX, offsetY) {
         Button(
-            onClick = {
-                // Wir senden ID und den GEGENTEILIGEN Status (Toggle).
-                // Die MainActivity entscheidet dann:
-                // - Läuft das System? -> Sofort UDP senden.
-                // - Ist Pause? -> Nur in der Map speichern (Button wird grün, Anlage bleibt aus).
-                onAction("${id}${if (isActive) "0" else "1"}")
-            },
-            modifier = Modifier.size(30.dp), // Feste Größe für alle Buttons
+            onClick = { onAction("${id}${if (isActive) "0" else "1"}") },
+            modifier = Modifier.size(40.dp),
             shape = RectangleShape,
             colors = ButtonDefaults.buttonColors(
-                // Grün bei AN, Rot bei AUS
                 containerColor = if (isActive) Color(0xFF4CAF50) else Color(0xFFF44336)
             ),
             contentPadding = PaddingValues(0.dp)
         ) {
-            // Textinhalt des Buttons
             Column(
                 modifier = Modifier.fillMaxSize(),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy((-10).dp, Alignment.CenterVertically)
             ) {
-                Text(displayId, fontSize = 9.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                Text(if (isActive) "ON" else "OFF", fontSize = 8.sp, color = Color.White)
+                Text(displayId, fontSize = 11.sp, fontWeight = FontWeight.Bold, color = Color.White)
+                Text(if (isActive) "ON" else "OFF", fontSize = 10.sp, color = Color.White)
             }
         }
     }
 }
 
-/**
- * Ein Button für eine Weiche.
- *
- * Im Gegensatz zu Blöcken wird der visuelle Status hier lokal ('remember') gespeichert,
- * da Weichen in deiner Logik immer sofort geschaltet werden (auch im Pause-Modus).
- */
 @Composable
 fun TrackSwitch(
     id: String,
     xPos: Float,
     yPos: Float,
-    screenWidth: Dp,
-    screenHeight: Dp,
+    renderWidth: Dp,
+    renderHeight: Dp,
+    offsetX: Dp,
+    offsetY: Dp,
     onAction: (String) -> Unit
 ) {
-    // Lokaler Status für die Anzeige (Gerade vs. Abzweig)
     var isStraight by remember { mutableStateOf(true) }
 
-    // Logik für richtige Button-ID
     val displayId = try {
         val number = id.substring(2, 4).toInt() + 1
         "${id.take(1)}${String.format("%02d", number)}"
     } catch (e: Exception) {
-        id // Fallback, falls die ID mal ein anderes Format hat
+        id
     }
 
-    TrackElement(xPos, yPos, screenWidth, screenHeight) {
+    TrackElement(xPos, yPos, renderWidth, renderHeight, offsetX, offsetY) {
         Button(
             onClick = {
                 isStraight = !isStraight
-                // Weichen senden immer sofort (siehe MainActivity Logik)
                 onAction("${id}${if (isStraight) "1" else "0"}")
             },
-            modifier = Modifier.size(30.dp),
+            modifier = Modifier.size(40.dp),
             shape = RectangleShape,
             colors = ButtonDefaults.buttonColors(
-                // Dunkelblau bei Gerade (S), Orange/Gelb bei Curve (C)
                 containerColor = if (isStraight) Color(0xFF00394A) else Color(0xFFFFB300)
             ),
             contentPadding = PaddingValues(0.dp)
@@ -196,13 +191,13 @@ fun TrackSwitch(
             ) {
                 Text(
                     text = displayId,
-                    fontSize = 9.sp,
+                    fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     color = if (isStraight) Color.White else Color.Black
                 )
                 Text(
-                    text = if (isStraight) "S" else "C", // S = Straight, C = Curved
-                    fontSize = 9.sp,
+                    text = if (isStraight) "S" else "C",
+                    fontSize = 10.sp,
                     color = if (isStraight) Color.White else Color.Black
                 )
             }
@@ -210,23 +205,20 @@ fun TrackSwitch(
     }
 }
 
-/**
- * Ein Wrapper, der ein Element an einer absoluten Position auf dem Bildschirm platziert.
- * Rechnet prozentuale Koordinaten (0.1) in Pixel um.
- */
 @Composable
 fun TrackElement(
     xPos: Float,
     yPos: Float,
-    screenWidth: Dp,
-    screenHeight: Dp,
+    width: Dp,
+    height: Dp,
+    offsetX: Dp,
+    offsetY: Dp,
     content: @Composable () -> Unit
 ) {
-    // Berechnung: Bildschirmbreite * Prozentwert
-    // -15.dp Offset sorgt dafür, dass die Mitte des 30dp-Buttons genau auf dem Punkt liegt.
+    // Berechnung: Position - 20.dp (halbe Größe von 40.dp)
     Box(modifier = Modifier.offset(
-        x = screenWidth * xPos - 15.dp,
-        y = screenHeight * yPos - 15.dp
+        x = offsetX + (width * xPos) - 20.dp,
+        y = offsetY + (height * yPos) - 20.dp
     )) {
         content()
     }

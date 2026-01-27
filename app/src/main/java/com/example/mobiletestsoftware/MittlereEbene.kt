@@ -10,44 +10,63 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.times
 
 // ############################################################################
 // GLEISPLAN: MITTLERE EBENE
 // ############################################################################
 
-/**
- * Zeigt den Gleisplan der Ebene "Mittlere Ebene" an.
- * Diese Ebene nutzt IDs im 200er Bereich (z.B. B201, W201), um sie von den anderen Ebenen zu unterscheiden.
- *
- * @param blockStates Map mit dem aktuellen Status der Blöcke (für die Färbung Rot/Grün).
- * @param onAction    Callback zum Senden von Befehlen an die MainActivity.
- */
 @SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
 fun MittlereEbene(blockStates: Map<String, Boolean>, onAction: (String) -> Unit) {
-    // BoxWithConstraints liefert uns 'maxWidth' und 'maxHeight'.
-    // Das ist entscheidend, um die Buttons relativ (in %) zur Bildschirmgröße zu positionieren.
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
 
-        // 1. Hintergrundbild (Gleisplan)
+        // --- POSITIONIERUNG ---
+        val padding = 10.dp
+
+        val painter = painterResource(id = R.drawable.mittlereebene)
+        val srcSize = painter.intrinsicSize
+        val imageRatio = if (srcSize.height > 0) srcSize.width / srcSize.height else 1f
+
+        val availableWidth = maxWidth - (padding * 2)
+        val availableHeight = maxHeight - (padding * 2)
+        val containerRatio = if (availableHeight > 0.dp) availableWidth / availableHeight else 1f
+
+        val renderWidth: Dp
+        val renderHeight: Dp
+        val internalOffsetX: Dp
+        val internalOffsetY: Dp
+
+        if (containerRatio > imageRatio) {
+            renderHeight = availableHeight
+            renderWidth = renderHeight * imageRatio
+            internalOffsetX = (availableWidth - renderWidth) / 2
+            internalOffsetY = 0.dp
+        } else {
+            renderWidth = availableWidth
+            renderHeight = renderWidth / imageRatio
+            internalOffsetX = 0.dp
+            internalOffsetY = (availableHeight - renderHeight) / 2
+        }
+
+        val finalOffsetX = padding + internalOffsetX
+        val finalOffsetY = padding + internalOffsetY
+        // ----------------------
+
         Image(
-            painter = painterResource(id = R.drawable.mittlereebene),
+            painter = painter,
             contentDescription = null,
             modifier = Modifier
                 .fillMaxSize()
-                .padding(10.dp), // Abstand, damit Bild nicht am Displayrand klebt
-            contentScale = ContentScale.Fit, // Skaliert das Bild passend in den Bereich
+                .padding(padding),
+            contentScale = ContentScale.Fit,
             alignment = Alignment.Center
         )
 
-        // 2. Weißer Rahmen (Optik)
-        // Überdeckt unsaubere Ränder oder Schatten des Bildes.
         Box(modifier = Modifier.fillMaxSize().padding(10.dp).border(10.dp, Color.White))
 
-        // 3. Definition der STRECKENBLÖCKE (B201 - B220)
-        // Format: Triple("ID", X-Koordinate in %, Y-Koordinate in %)
-        // Diese Blöcke zeigen den Status aus 'blockStates' an (Rot/Grün).
         val blocks = listOf(
             Triple("B200", 0.1f, 0.1f), Triple("B201", 0.1f, 0.15f),
             Triple("B202", 0.1f, 0.2f), Triple("B203", 0.1f, 0.25f),
@@ -60,13 +79,11 @@ fun MittlereEbene(blockStates: Map<String, Boolean>, onAction: (String) -> Unit)
             Triple("B216", 0.1f, 0.9f), Triple("B217", 0.2f, 0.1f),
             Triple("B218", 0.2f, 0.15f), Triple("B219", 0.2f, 0.2f)
         )
-        // Erzeugt die Buttons an den berechneten Positionen
+
         blocks.forEach { (id, x, y) ->
-            TrackBlock(id, x, y, maxWidth, maxHeight, blockStates, onAction)
+            TrackBlock(id, x, y, renderWidth, renderHeight, finalOffsetX, finalOffsetY, blockStates, onAction)
         }
 
-        // 4. Definition der WEICHEN (W201 - W212)
-        // Diese Buttons speichern ihren visuellen Status (Gerade/Abzweig) selbst.
         val switches = listOf(
             Triple("W200", 0.4f, 0.1f), Triple("W201", 0.4f, 0.15f),
             Triple("W202", 0.4f, 0.2f), Triple("W203", 0.4f, 0.25f),
@@ -75,9 +92,9 @@ fun MittlereEbene(blockStates: Map<String, Boolean>, onAction: (String) -> Unit)
             Triple("W208", 0.4f, 0.5f), Triple("W209", 0.4f, 0.55f),
             Triple("W210", 0.4f, 0.6f), Triple("W211", 0.4f, 0.65f)
         )
-        // Erzeugt die Weichen-Buttons
+
         switches.forEach { (id, x, y) ->
-            TrackSwitch(id, x, y, maxWidth, maxHeight, onAction)
+            TrackSwitch(id, x, y, renderWidth, renderHeight, finalOffsetX, finalOffsetY, onAction)
         }
     }
 }
