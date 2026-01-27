@@ -2,8 +2,8 @@ package com.example.mobiletestsoftware
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -48,6 +48,7 @@ class MainActivity : ComponentActivity() {
     private var lastResponseTime by mutableStateOf(0L)    // Zeitstempel der letzten Antwort (für Watchdog)
 
     // --- STOP / PAUSE LOGIK & ZENTRALER STATUS ---
+    // Startet standardmäßig im STOP-Modus (Sicherheit)
     private var isEmergencyStopActive by mutableStateOf(true)
 
     // Speichert den Zustand ALLER Blöcke zentral ("Repräsentation").
@@ -77,9 +78,11 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    // --- AUTOMATISCHER STOP BEI APP-MINIMIERUNG ---
     override fun onPause() {
         super.onPause()
         if (wantsConnection) {
+            setSystemState(true)
             stopConnectionLogic()
         }
     }
@@ -143,35 +146,49 @@ class MainActivity : ComponentActivity() {
     // STEUERUNGS-LOGIK (CORE)
     // ########################################################################
 
+    /**
+     * Setzt den System-Status (START vs. STOP).
+     * Diese Funktion zentralisiert die Logik für Start, Stop, Pause und Resume.
+     * * @param stop true = STOP/PAUSE (Sicherheitsmodus), false = START/RUN (Live).
+     */
+    private fun setSystemState(stop: Boolean) {
+        isEmergencyStopActive = stop
+
+        if (isEmergencyStopActive) {
+            // --- STOP MODUS ---
+            // 1. Hardware sicherheitshalber stoppen
+            sendUdpBroadcast("EMERGENCY_STOP_ON")
+            // 2. Alle aktuell in der App aktiven Blöcke physisch ausschalten
+            // (Die Variable 'blockStates' bleibt aber true -> Visuell in der App noch grün!)
+            blockStates.forEach { (id, isActive) ->
+                if (isActive) sendUdpBroadcast("${id}0")
+            }
+            statusSent = "SYSTEM GESTOPPT (Pause)"
+        } else {
+            // --- RUN MODUS ---
+            // 1. Hardware freigeben
+            sendUdpBroadcast("EMERGENCY_STOP_OFF")
+            // 2. Zustand synchronisieren: Alles was in der App "Grün" ist, wird wieder an die Anlage gesendet
+            blockStates.forEach { (id, active) ->
+                sendUdpBroadcast("${id}${if (active) "1" else "0"}")
+            }
+            statusSent = "SYSTEM LÄUFT"
+        }
+    }
+
     private fun handleTrackAction(action: String) {
         val id = action.substring(0, action.length - 1)
         val state = action.last() == '1'
 
         if (id.startsWith("W")) {
+            // Weichen immer sofort senden
             sendUdpBroadcast(action)
         } else if (id.startsWith("B")) {
+            // Blöcke: Nur speichern. Senden nur, wenn System LÄUFT.
             blockStates[id] = state
             if (!isEmergencyStopActive) {
                 sendUdpBroadcast(action)
             }
-        }
-    }
-
-    private fun toggleSystemState() {
-        isEmergencyStopActive = !isEmergencyStopActive
-
-        if (isEmergencyStopActive) {
-            sendUdpBroadcast("EMERGENCY_STOP_ON")
-            blockStates.forEach { (id, isActive) ->
-                if (isActive) sendUdpBroadcast("${id}0")
-            }
-            statusSent = "SYSTEM GESTOPPT"
-        } else {
-            sendUdpBroadcast("EMERGENCY_STOP_OFF")
-            blockStates.forEach { (id, active) ->
-                sendUdpBroadcast("${id}${if (active) "1" else "0"}")
-            }
-            statusSent = "SYSTEM LÄUFT"
         }
     }
 
@@ -181,6 +198,7 @@ class MainActivity : ComponentActivity() {
 
     private fun toggleConnection() {
         if (wantsConnection) {
+            // Trennen
             wantsConnection = false
             isConnected = false
             isConnecting = false
@@ -188,12 +206,18 @@ class MainActivity : ComponentActivity() {
             statusSent = "Getrennt"
             statusReceived = "-"
         } else {
+            // Verbinden
             wantsConnection = true
             lastResponseTime = System.currentTimeMillis()
             startConnectionWatchdog()
             startHeartbeat()
             if (!isConnected) isConnecting = true
+
+            // Initialisierung:
+            // 1. PING senden
             sendUdpBroadcast("PING_STATUS")
+            // 2. Sofort in den STOP-Zustand (Basiszustand) gehen, damit Anlage sicher ist (alles aus).
+            setSystemState(true)
         }
     }
 
@@ -232,18 +256,19 @@ class MainActivity : ComponentActivity() {
 
     @Composable
     fun MainLayoutWrapper(textSent: String, textReceived: String) {
-        val headerColor = MaterialTheme.colorScheme.surfaceVariant
-        val footerColor = MaterialTheme.colorScheme.surfaceVariant
+        val headerColor = Color(0xFFE0E0E0)
+        val footerColor = Color(0xFFE0E0E0)
+        val dividerColor = Color(0xFFCCCCCC)
 
         Column(modifier = Modifier.fillMaxSize().background(Color.White)) {
             // Platzhalter für Statusleiste
             Spacer(modifier = Modifier.fillMaxWidth().windowInsetsTopHeight(WindowInsets.statusBars).background(headerColor))
 
-            // --- HEADER (Ebenen-Auswahl & Status) ---
+            // --- HEADER ---
             Surface(modifier = Modifier.weight(0.1f).fillMaxWidth(), color = headerColor) {
                 Box(modifier = Modifier.fillMaxSize().padding(horizontal = 20.dp)) {
 
-                    // Linker Bereich: Dropdown Menü
+                    // Linker Bereich: Dropdown
                     Box(modifier = Modifier.align(Alignment.CenterStart)) {
                         Button(
                             onClick = { isLevelMenuExpanded = true },
@@ -255,6 +280,7 @@ class MainActivity : ComponentActivity() {
                                 text = selectedLevel,
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
+                                color = Color.White,
                                 modifier = Modifier.fillMaxWidth(),
                                 textAlign = TextAlign.Center
                             )
@@ -267,12 +293,7 @@ class MainActivity : ComponentActivity() {
                             levels.forEach { level ->
                                 DropdownMenuItem(
                                     text = {
-                                        Text(
-                                            text = level,
-                                            fontSize = 14.sp,
-                                            modifier = Modifier.fillMaxWidth(),
-                                            textAlign = TextAlign.Center
-                                        )
+                                        Text(text = level, fontSize = 14.sp, modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Black)
                                     },
                                     onClick = { selectedLevel = level; isLevelMenuExpanded = false }
                                 )
@@ -280,69 +301,44 @@ class MainActivity : ComponentActivity() {
                         }
                     }
 
-                    // --- MITTLERER BEREICH (Design Update) ---
+                    // --- MITTLERER BEREICH (Status) ---
                     Row(
                         modifier = Modifier
                             .align(Alignment.Center)
-                            .width(400.dp), // 1. Wir reservieren eine feste Gesamtbreite in der Mitte
+                            .width(400.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        // SPALTE: GESENDET (Linke Hälfte)
                         Column(
-                            modifier = Modifier.weight(1f), // 2. Nimmt exakt 50% der Breite (200dp)
+                            modifier = Modifier.weight(1f),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Text(
-                                text = "GESENDET",
-                                fontSize = 13.sp,
-                                color = Color.Black,
-                                fontWeight = FontWeight.Bold
-                            )
+                            Text("GESENDET", fontSize = 13.sp, color = Color.Black, fontWeight = FontWeight.Bold)
                             Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = textSent,
-                                fontSize = 12.sp,
-                                color = Color.Black,
-                                fontWeight = FontWeight.Medium,
-                                maxLines = 1, // Wichtig: Text wird abgeschnitten, nicht umgebrochen
-                                overflow = TextOverflow.Ellipsis // Fügt "..." hinzu, wenn zu lang
-                            )
+                            Text(text = textSent, fontSize = 12.sp, color = Color.Black, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
-
-                        // SPALTE: EMPFANGEN (Rechte Hälfte)
                         Column(
-                            modifier = Modifier.weight(1f), // 2. Nimmt die anderen 50% der Breite
+                            modifier = Modifier.weight(1f),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Text(
-                                text = "EMPFANGEN",
-                                fontSize = 13.sp,
-                                color = Color.Black,
-                                fontWeight = FontWeight.Bold
-                            )
+                            Text("EMPFANGEN", fontSize = 13.sp, color = Color.Black, fontWeight = FontWeight.Bold)
                             Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = textReceived,
-                                fontSize = 12.sp,
-                                color = Color(0xFF00394A),
-                                fontWeight = FontWeight.Medium,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
+                            Text(text = textReceived, fontSize = 12.sp, color = Color(0xFF00394A), fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                     }
 
-                    // Rechter Bereich: Preset Button
+                    // Rechter Bereich: Preset
                     Button(
                         onClick = {},
                         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF00394A)),
                         modifier = Modifier.align(Alignment.CenterEnd).height(48.dp).width(200.dp),
                         contentPadding = PaddingValues(0.dp)
                     ) {
-                        Text("PRESETS", fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                        Text("PRESETS", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.White)
                     }
                 }
             }
+
+            Divider(color = dividerColor, thickness = 1.dp)
 
             // --- MAIN CONTENT ---
             Box(modifier = Modifier.weight(0.8f).fillMaxWidth().background(Color.White)) {
@@ -352,6 +348,8 @@ class MainActivity : ComponentActivity() {
                     "Mittlere Ebene" -> MittlereEbene(blockStates, ::handleTrackAction)
                 }
             }
+
+            Divider(color = dividerColor, thickness = 1.dp)
 
             // --- FOOTER ---
             Surface(modifier = Modifier.weight(0.1f).fillMaxWidth(), color = footerColor) {
@@ -370,8 +368,9 @@ class MainActivity : ComponentActivity() {
                             Text(text = if (isConnected) "CONNECTED" else if (isConnecting) "CONNECTING..." else "DISCONNECTED", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                         }
 
+                        // START/STOP Button nutzt jetzt die neue setSystemState Logik
                         Button(
-                            onClick = { toggleSystemState() },
+                            onClick = { setSystemState(!isEmergencyStopActive) },
                             colors = ButtonDefaults.buttonColors(containerColor = if (isEmergencyStopActive) Color(0xFF4CAF50) else Color(0xFFF44336)),
                             modifier = Modifier.height(48.dp).width(200.dp),
                             contentPadding = PaddingValues(0.dp)
