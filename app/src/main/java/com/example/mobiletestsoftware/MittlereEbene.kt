@@ -12,7 +12,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.times
 
 // ############################################################################
 // GLEISPLAN: MITTLERE EBENE
@@ -68,16 +67,16 @@ fun MittlereEbene(blockStates: Map<String, Boolean>, onAction: (String) -> Unit)
         Box(modifier = Modifier.fillMaxSize().padding(10.dp).border(10.dp, Color.White))
 
         val blocks = listOf(
-            Triple("B200", 0.1f, 0.1f), Triple("B201", 0.1f, 0.15f),
-            Triple("B202", 0.1f, 0.2f), Triple("B203", 0.1f, 0.25f),
-            Triple("B204", 0.1f, 0.3f), Triple("B205", 0.1f, 0.35f),
-            Triple("B206", 0.1f, 0.4f), Triple("B207", 0.1f, 0.45f),
-            Triple("B208", 0.1f, 0.5f), Triple("B209", 0.1f, 0.55f),
-            Triple("B210", 0.1f, 0.6f), Triple("B211", 0.1f, 0.65f),
-            Triple("B212", 0.1f, 0.7f), Triple("B213", 0.1f, 0.75f),
-            Triple("B214", 0.1f, 0.8f), Triple("B215", 0.1f, 0.85f),
-            Triple("B216", 0.1f, 0.9f), Triple("B217", 0.2f, 0.1f),
-            Triple("B218", 0.2f, 0.15f), Triple("B219", 0.2f, 0.2f)
+            Triple("B200", 0.985f, 0.42f), Triple("B201", 0.935f, 0.42f),
+            Triple("B202", 0.71f, 0.2f), Triple("B203", 0.7425f, 0.83f),
+            Triple("B204", 0.6925f, 0.85f), Triple("B205", 0.6425f, 0.83f),
+            Triple("B206", 0.67f, 0.3375f), Triple("B207", 0.6325f, 0.265f),
+            Triple("B208", 0.58f, 0.54f), Triple("B209", 0.48f, 0.9f),
+            Triple("B210", 0.47f, 0.65f), Triple("B211", 0.47f, 0.40f),
+            Triple("B212", 0.48f, 0.15f), Triple("B213", 0.25f, 0.4f),
+            Triple("B214", 0.12f, 0.4f), Triple("B215", 0.15f, 0.9f),
+            Triple("B216", 0.17f, 0.12f), Triple("B218", 0.4f, 0.17f),
+            Triple("B219", 0.38f, 0.86f)
         )
 
         blocks.forEach { (id, x, y) ->
@@ -85,14 +84,14 @@ fun MittlereEbene(blockStates: Map<String, Boolean>, onAction: (String) -> Unit)
         }
 
         val switches = listOf(
-            Triple("W200", 0.4f, 0.1f), Triple("W201", 0.4f, 0.15f),
-            Triple("W202", 0.4f, 0.2f), Triple("W203", 0.4f, 0.25f),
-            Triple("W204", 0.4f, 0.3f), Triple("W205", 0.4f, 0.35f),
-            Triple("W206", 0.4f, 0.4f), Triple("W207", 0.4f, 0.45f),
-            Triple("W208", 0.4f, 0.5f), Triple("W209", 0.4f, 0.55f),
-            Triple("W210", 0.4f, 0.6f), Triple("W211", 0.4f, 0.65f),
+            Triple("W200", 0.68f, 0.94f), Triple("W201", 0.77f, 0.94f),
+            Triple("W202", 0.7375f, 0.0225f), Triple("W203", 0.6925f, 0.0225f),
+            Triple("W204", 0.645f, 0.0225f), Triple("W205", 0.71f, 0.12f),
+            Triple("W206", 0.58f, 0.24f), Triple("W207", 0.58f, 0.78f),
+            Triple("W208", 0.45f, 0.74f), Triple("W209", 0.28f, 0.09f),
+            Triple("W210", 0.28f, 0.94f), Triple("W211", 0.685f, 0.41f),
 
-            Triple("K200", 0.6f, 0.1f)
+            Triple("K200", 0.49f, 0.52f)
 
         )
 

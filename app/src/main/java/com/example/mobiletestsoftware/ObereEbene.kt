@@ -12,7 +12,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.times
 
 // ############################################################################
 // GLEISPLAN: OBERE EBENE
@@ -68,16 +67,16 @@ fun ObereEbene(blockStates: Map<String, Boolean>, onAction: (String) -> Unit) {
         Box(modifier = Modifier.fillMaxSize().padding(2.dp).border(10.dp, Color.White))
 
         val blocks = listOf(
-            Triple("B100", 0.1f, 0.1f), Triple("B101", 0.1f, 0.15f),
-            Triple("B102", 0.1f, 0.2f), Triple("B103", 0.1f, 0.25f),
-            Triple("B104", 0.1f, 0.3f), Triple("B105", 0.1f, 0.35f),
-            Triple("B106", 0.1f, 0.4f), Triple("B107", 0.1f, 0.45f),
-            Triple("B108", 0.1f, 0.5f), Triple("B109", 0.1f, 0.55f),
-            Triple("B110", 0.1f, 0.6f), Triple("B111", 0.1f, 0.65f),
-            Triple("B112", 0.1f, 0.7f), Triple("B113", 0.1f, 0.75f),
-            Triple("B114", 0.1f, 0.8f), Triple("B115", 0.1f, 0.85f),
-            Triple("B116", 0.1f, 0.9f), Triple("B117", 0.2f, 0.1f),
-            Triple("B118", 0.2f, 0.15f)
+            Triple("B100", 0.2f, 0.45f), Triple("B101", 0.38f, 0.45f),
+            Triple("B102", 0.64f, 0.45f), Triple("B103", 0.87f, 0.45f),
+            Triple("B104", 0.51f, 0.6f), Triple("B105", 0.51f, 0.7f),
+            Triple("B106", 0.51f, 0.8f), Triple("B107", 0.51f, 0.88f),
+            Triple("B108", 0.51f, 0.95f), Triple("B109", 0.51f, 0.1f),
+            Triple("B110", 0.51f, 0.2f), Triple("B111", 0.49f, 0.38f),
+            Triple("B112", 0.04f, 0.7f), Triple("B113", 0.07f, 0.45f),
+            Triple("B114", 0.13f, 0.45f), Triple("B115", 0.92f, 0.45f),
+            Triple("B116", 0.83f, 0.79f), Triple("B117", 0.83f, 0.88f),
+            Triple("B118", 0.83f, 0.1f)
         )
 
         blocks.forEach { (id, x, y) ->
@@ -85,17 +84,18 @@ fun ObereEbene(blockStates: Map<String, Boolean>, onAction: (String) -> Unit) {
         }
 
         val switches = listOf(
-            Triple("W100", 0.3f, 0.1f), Triple("W101", 0.3f, 0.15f),
-            Triple("W102", 0.3f, 0.2f), Triple("W103", 0.3f, 0.25f),
-            Triple("W104", 0.3f, 0.3f), Triple("W105", 0.3f, 0.35f),
-            Triple("W106", 0.3f, 0.4f), Triple("W107", 0.3f, 0.45f),
-            Triple("W108", 0.3f, 0.5f), Triple("W109", 0.3f, 0.55f),
-            Triple("W110", 0.3f, 0.6f), Triple("W111", 0.3f, 0.65f),
-            Triple("W112", 0.3f, 0.7f), Triple("W113", 0.3f, 0.75f),
+            Triple("W100", 0.28f, 0.3f), Triple("W101", 0.42f, 0.31f),
+            Triple("W102", 0.75f, 0.3f), Triple("W103", 0.76f, 0.61f),
+            Triple("W104", 0.28f, 0.61f), Triple("W105", 0.74f, 0.69f),
+            Triple("W106", 0.19f, 0.62f), Triple("W107", 0.33f, 0.1f),
+            Triple("W108", 0.71f, 0.1f), Triple("W109", 0.96f, 0.28f),
+            Triple("W110", 0.96f, 0.67f), Triple("W111", 0.94f, 0.84f),
+            Triple("W112", 0.64f, 0.92f), Triple("W113", 0.22f, 0.92f),
 
-            Triple("K100", 0.4f, 0.1f),
-            Triple("K101", 0.4f, 0.2f),
-            Triple("K102", 0.4f, 0.3f)
+            Triple("K100", 0.6f, 0.31f),
+            Triple("K101", 0.36f, 0.21f),
+            Triple("K102", 0.64f, 0.2f),
+            Triple("K103", 0.68f, 0.8f)
         )
 
         switches.forEach { (id, x, y) ->

@@ -18,7 +18,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.unit.times
 
 // ############################################################################
 // GLEISPLAN: ABLAUFBERG
@@ -75,14 +74,14 @@ fun Ablaufberg(blockStates: Map<String, Boolean>, onAction: (String) -> Unit) {
 
         // Definition der STRECKENBLÖCKE
         val blocks = listOf(
-            Triple("B000", 0.79f, 0.6775f),
-            Triple("B001", 0.79f, 0.765f),
-            Triple("B002", 0.79f, 0.8485f),
-            Triple("B003", 0.79f, 0.9375f),
-            Triple("B004", 0.5575f, 0.675f),
-            Triple("B006", 0.23f, 0.75f),
-            Triple("B007", 0.23f, 0.83f),
-            Triple("B008", 0.4925f, 0.09f)
+            Triple("B000", 0.82f, 0.69f),
+            Triple("B001", 0.82f, 0.765f),
+            Triple("B002", 0.82f, 0.8485f),
+            Triple("B003", 0.82f, 0.92f),
+            Triple("B004", 0.565f, 0.69f),
+            Triple("B006", 0.21f, 0.765f),
+            Triple("B007", 0.21f, 0.84f),
+            Triple("B008", 0.4925f, 0.04f)
         )
 
         blocks.forEach { (id, x, y) ->
@@ -91,13 +90,13 @@ fun Ablaufberg(blockStates: Map<String, Boolean>, onAction: (String) -> Unit) {
 
         // Definition der WEICHEN
         val switches = listOf(
-            Triple("W000", 0.63f, 0.675f),
+            Triple("W000", 0.64f, 0.69f),
             Triple("W001", 0.6f, 0.83f),
             Triple("W002", 0.55f, 0.88f),
-            Triple("W003", 0.4925f, 0.675f),
-            Triple("W004", 0.0975f, 0.61f),
+            Triple("W003", 0.49f, 0.69f),
+            Triple("W004", 0.07f, 0.63f),
 
-            Triple("K000", 0.0975f, 0.67f)
+            Triple("K000", 0.505f, 0.83f)
         )
 
         switches.forEach { (id, x, y) ->
