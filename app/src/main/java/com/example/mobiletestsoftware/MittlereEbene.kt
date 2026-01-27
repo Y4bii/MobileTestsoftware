@@ -90,7 +90,10 @@ fun MittlereEbene(blockStates: Map<String, Boolean>, onAction: (String) -> Unit)
             Triple("W204", 0.4f, 0.3f), Triple("W205", 0.4f, 0.35f),
             Triple("W206", 0.4f, 0.4f), Triple("W207", 0.4f, 0.45f),
             Triple("W208", 0.4f, 0.5f), Triple("W209", 0.4f, 0.55f),
-            Triple("W210", 0.4f, 0.6f), Triple("W211", 0.4f, 0.65f)
+            Triple("W210", 0.4f, 0.6f), Triple("W211", 0.4f, 0.65f),
+
+            Triple("K200", 0.6f, 0.1f)
+
         )
 
         switches.forEach { (id, x, y) ->

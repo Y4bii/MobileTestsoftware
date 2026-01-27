@@ -91,7 +91,11 @@ fun ObereEbene(blockStates: Map<String, Boolean>, onAction: (String) -> Unit) {
             Triple("W106", 0.3f, 0.4f), Triple("W107", 0.3f, 0.45f),
             Triple("W108", 0.3f, 0.5f), Triple("W109", 0.3f, 0.55f),
             Triple("W110", 0.3f, 0.6f), Triple("W111", 0.3f, 0.65f),
-            Triple("W112", 0.3f, 0.7f), Triple("W113", 0.3f, 0.75f)
+            Triple("W112", 0.3f, 0.7f), Triple("W113", 0.3f, 0.75f),
+
+            Triple("K100", 0.4f, 0.1f),
+            Triple("K101", 0.4f, 0.2f),
+            Triple("K102", 0.4f, 0.3f)
         )
 
         switches.forEach { (id, x, y) ->

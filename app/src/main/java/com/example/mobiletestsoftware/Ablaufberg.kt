@@ -95,7 +95,9 @@ fun Ablaufberg(blockStates: Map<String, Boolean>, onAction: (String) -> Unit) {
             Triple("W001", 0.6f, 0.83f),
             Triple("W002", 0.55f, 0.88f),
             Triple("W003", 0.4925f, 0.675f),
-            Triple("W004", 0.0975f, 0.61f)
+            Triple("W004", 0.0975f, 0.61f),
+
+            Triple("K000", 0.0975f, 0.67f)
         )
 
         switches.forEach { (id, x, y) ->
