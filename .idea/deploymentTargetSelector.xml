@@ -12,6 +12,14 @@
           </Target>
         </DropdownSelection>
         <DialogSelection />
+        <DropdownSelection timestamp="2026-01-26T16:01:28.207827200Z">
+          <Target type="DEFAULT_BOOT">
+            <handle>
+              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\Thorben\.android\avd\Medium_Tablet.avd" />
+            </handle>
+          </Target>
+        </DropdownSelection>
+        <DialogSelection />
       </SelectionState>
     </selectionStates>
   </component>

@@ -25,7 +25,9 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.net.DatagramPacket
 import java.net.DatagramSocket
+import java.net.Inet4Address
 import java.net.InetAddress
+import java.net.NetworkInterface
 import java.net.ServerSocket
 
 /**
@@ -41,8 +43,10 @@ class MainActivity : ComponentActivity() {
     // ========================================================================
     // KONFIGURATION
     // ========================================================================
-    private val UDP_PORT = 5005 // Ziel-Port für Steuerbefehle an die Anlage
-    private val TCP_PORT = 6000 // Port, auf dem die App auf Bestätigungen (ACKs) lauscht
+    private val UDP_PORT = 5005 // Port für ausgehende Befehle (Broadcast)
+    private val TCP_PORT = 6005 // Port für eingehende Bestätigungen (ACKs)
+
+    private val IP_ADDRESS = getLocalIpAddress(); //lokale IP-Adresse erhalten
 
     // ========================================================================
     // STATUS-VARIABLEN (STATE)
@@ -163,9 +167,17 @@ class MainActivity : ComponentActivity() {
         Thread {
             try {
                 val serverSocket = ServerSocket(TCP_PORT)
+
+                runOnUiThread {
+                    statusReceived = "Warte auf Verbindung: ${getLocalIpAddress()}:$TCP_PORT"
+                }
+
                 while (true) {
                     // Blockiert, bis eine Nachricht eingeht
                     val client = serverSocket.accept()
+                    runOnUiThread {
+                        statusReceived = "TCP Verbindung erhalten"
+                    }
                     val input = client.getInputStream().bufferedReader().readLine()
 
                     runOnUiThread {
@@ -180,6 +192,25 @@ class MainActivity : ComponentActivity() {
                 }
             } catch (e: Exception) { e.printStackTrace() }
         }.start()
+    }
+
+
+    // eigene IP Adresse herausfinden
+    private fun getLocalIpAddress(): String? {
+        try {
+            val interfaces = NetworkInterface.getNetworkInterfaces()
+            for (intf in interfaces) {
+                val addresses = intf.inetAddresses
+                for (addr in addresses) {
+                    if (!addr.isLoopbackAddress && addr is Inet4Address) {
+                        return addr.hostAddress
+                    }
+                }
+            }
+        } catch (ex: Exception) {
+            ex.printStackTrace()
+        }
+        return null
     }
 
     // ========================================================================
@@ -262,11 +293,7 @@ class MainActivity : ComponentActivity() {
             startConnectionWatchdog()
             startHeartbeat()
             if (!isConnected) isConnecting = true
-
-            // Initialisierung beim Verbinden:
-            // 1. Ping senden
-            sendUdpBroadcast("PING_STATUS")
-            // 2. System in sicheren STOP-Zustand versetzen
+            sendUdpBroadcast("Mobile-Testsoftware:" + IP_ADDRESS)
             setSystemState(true)
         }
     }
