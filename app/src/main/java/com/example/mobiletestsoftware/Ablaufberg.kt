@@ -25,7 +25,11 @@ import androidx.compose.ui.unit.sp
 
 @SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
-fun Ablaufberg(blockStates: Map<String, Boolean>, onAction: (String) -> Unit) {
+fun Ablaufberg(
+    blockStates: Map<String, Boolean>,
+    switchStates: Map<String, Boolean>,
+    onAction: (String) -> Unit
+) {
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
 
         // --- POSITIONIERUNG ---
@@ -100,7 +104,7 @@ fun Ablaufberg(blockStates: Map<String, Boolean>, onAction: (String) -> Unit) {
         )
 
         switches.forEach { (id, x, y) ->
-            TrackSwitch(id, x, y, renderWidth, renderHeight, finalOffsetX, finalOffsetY, onAction)
+            TrackSwitch(id, x, y, renderWidth, renderHeight, finalOffsetX, finalOffsetY, switchStates, onAction)
         }
     }
 }
@@ -161,9 +165,11 @@ fun TrackSwitch(
     renderHeight: Dp,
     offsetX: Dp,
     offsetY: Dp,
+    switchStates: Map<String, Boolean>,
     onAction: (String) -> Unit
 ) {
-    var isStraight by remember { mutableStateOf(true) }
+    // Zustand wird aus der zentralen Map bezogen
+    val isStraight = switchStates[id] ?: true
 
     val displayId = try {
         val number = id.substring(2, 4).toInt() + 1
@@ -175,8 +181,8 @@ fun TrackSwitch(
     TrackElement(xPos, yPos, renderWidth, renderHeight, offsetX, offsetY) {
         Button(
             onClick = {
-                isStraight = !isStraight
-                onAction("${id}${if (isStraight) "1" else "0"}")
+                val newState = !isStraight
+                onAction("${id}${if (newState) "1" else "0"}")
             },
             modifier = Modifier.size(40.dp),
             shape = RectangleShape,
@@ -216,7 +222,7 @@ fun TrackElement(
     offsetY: Dp,
     content: @Composable () -> Unit
 ) {
-    // Berechnung: Position - 20.dp (halbe Größe von 40.dp)
+    // Berechnung der Position relativ zum Bildzentrum
     Box(modifier = Modifier.offset(
         x = offsetX + (width * xPos) - 20.dp,
         y = offsetY + (height * yPos) - 20.dp

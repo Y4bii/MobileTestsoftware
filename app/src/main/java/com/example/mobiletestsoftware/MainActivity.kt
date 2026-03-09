@@ -67,9 +67,10 @@ class MainActivity : ComponentActivity() {
     private var isEmergencyStopActive by mutableStateOf(true)
 
     // Zentrale Datenhaltung ("Single Source of Truth").
-    // Speichert den visuellen Zustand aller Gleis-Elemente (Blöcke).
-    // Key: ID (z.B. "B101"), Value: true (AN/Grün) / false (AUS/Rot).
+    // Speichert den visuellen Zustand aller Gleis-Elemente.
+    // Key: ID (z.B. "B101"), Value: true (AN/Grün/S) / false (AUS/Rot/C).
     private val blockStates = mutableStateMapOf<String, Boolean>()
+    private val switchStates = mutableStateMapOf<String, Boolean>() // Zentrale Speicherung der Weichenzustände
 
     // --- UI Navigation ---
     private var selectedLevel by mutableStateOf("Ablaufberg") // Aktuell angezeigter Gleisplan
@@ -161,7 +162,7 @@ class MainActivity : ComponentActivity() {
 
     /**
      * Startet einen TCP-Server in einem Hintergrund-Thread.
-     * Wartet auf eingehende Verbindungen/Bestätigungen der Anlage.
+     * Wartet auf den TCP-Handshake der Anlage als Lebenszeichen.
      */
     private fun startTcpListener() {
         Thread {
@@ -173,22 +174,22 @@ class MainActivity : ComponentActivity() {
                 }
 
                 while (true) {
-                    // Blockiert, bis eine Nachricht eingeht
+                    // Blockiert, bis ein TCP-Handshake (ACK) erfolgt
                     val client = serverSocket.accept()
                     runOnUiThread {
-                        statusReceived = "TCP Verbindung erhalten"
+                        statusReceived = "Handshake erfolgreich"
+                        lastResponseTime = System.currentTimeMillis() // Watchdog-Reset durch Handshake
 
                         if (wantsConnection) {
+                            if (!isConnected) {
+                                forceSyncSwitches()
+                            }
+
                             isConnected = true
                             isConnecting = false
                         }
                     }
-                    val input = client.getInputStream().bufferedReader().readLine()
-
-                    runOnUiThread {
-                        statusReceived = input ?: ""
-                        lastResponseTime = System.currentTimeMillis() // Watchdog-Reset
-                    }
+                    // Socket sofort schließen, da kein Text-Payload erwartet wird
                     client.close()
                 }
             } catch (e: Exception) { e.printStackTrace() }
@@ -258,8 +259,9 @@ class MainActivity : ComponentActivity() {
         val id = action.substring(0, action.length - 1) // ID extrahieren (z.B. "B100")
         val state = action.last() == '1'               // Status extrahieren ('1' = true)
 
-        if (id.startsWith("W")) {
-            // WEICHEN: Werden immer sofort gesendet, unabhängig vom Systemstatus.
+        if (id.startsWith("W") || id.startsWith("K")) {
+            // WEICHEN: Zustand speichern und sofort senden
+            switchStates[id] = state
             sendUdpBroadcast(action)
         } else if (id.startsWith("B")) {
             // BLÖCKE: Status wird immer gespeichert.
@@ -269,6 +271,24 @@ class MainActivity : ComponentActivity() {
                 sendUdpBroadcast(action)
             }
         }
+    }
+
+    /**
+     * Synchronisiert alle Weichenzustände der App mit der physischen Anlage.
+     */
+    private fun forceSyncSwitches() {
+        val allSwitches = listOf(
+            "W000", "W001", "W002", "W003", "W004", "K000",
+            "W100", "W101", "W102", "W103", "W104", "W105", "W106", "W107", "W108", "W109", "W110", "W111", "W112", "W113", "K100", "K101", "K102", "K103",
+            "W200", "W201", "W202", "W203", "W204", "W205", "W206", "W207", "W208", "W209", "W210", "W211", "K200"
+        )
+        Thread {
+            allSwitches.forEach { id ->
+                val state = switchStates[id] ?: true
+                sendUdpBroadcast("${id}${if (state) "1" else "0"}")
+                Thread.sleep(50)
+            }
+        }.start()
     }
 
     // ========================================================================
@@ -295,6 +315,7 @@ class MainActivity : ComponentActivity() {
             startHeartbeat()
             if (!isConnected) isConnecting = true
             sendUdpBroadcast("Mobile-Testsoftware:" + IP_ADDRESS)
+
             setSystemState(true)
         }
     }
@@ -319,7 +340,6 @@ class MainActivity : ComponentActivity() {
                 // Timeout erst nach 25 Sekunden (erlaubt 2 verpasste Heartbeats)
                 if (isConnected && (silenceDuration > 25000)) {
                     runOnUiThread {
-                        isConnected = false
                         isConnected = false
                         isConnecting = false
                         wantsConnection = false
@@ -448,9 +468,9 @@ class MainActivity : ComponentActivity() {
             Box(modifier = Modifier.weight(0.8f).fillMaxWidth().background(Color.White)) {
                 // Lädt die entsprechende Ebene basierend auf der Auswahl im Dropdown
                 when (selectedLevel) {
-                    "Ablaufberg" -> Ablaufberg(blockStates, ::handleTrackAction)
-                    "Obere Ebene" -> ObereEbene(blockStates, ::handleTrackAction)
-                    "Mittlere Ebene" -> MittlereEbene(blockStates, ::handleTrackAction)
+                    "Ablaufberg" -> Ablaufberg(blockStates, switchStates, ::handleTrackAction)
+                    "Obere Ebene" -> ObereEbene(blockStates, switchStates, ::handleTrackAction)
+                    "Mittlere Ebene" -> MittlereEbene(blockStates, switchStates, ::handleTrackAction)
                 }
             }
 

@@ -19,7 +19,11 @@ import androidx.compose.ui.unit.dp
 
 @SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
-fun ObereEbene(blockStates: Map<String, Boolean>, onAction: (String) -> Unit) {
+fun ObereEbene(
+    blockStates: Map<String, Boolean>,
+    switchStates: Map<String, Boolean>,
+    onAction: (String) -> Unit
+) {
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
 
         // --- POSITIONIERUNG ---
@@ -66,6 +70,7 @@ fun ObereEbene(blockStates: Map<String, Boolean>, onAction: (String) -> Unit) {
 
         Box(modifier = Modifier.fillMaxSize().padding(2.dp).border(10.dp, Color.White))
 
+        // Definition der STRECKENBLÖCKE
         val blocks = listOf(
             Triple("B100", 0.2f, 0.45f), Triple("B101", 0.38f, 0.45f),
             Triple("B102", 0.64f, 0.45f), Triple("B103", 0.87f, 0.45f),
@@ -83,6 +88,7 @@ fun ObereEbene(blockStates: Map<String, Boolean>, onAction: (String) -> Unit) {
             TrackBlock(id, x, y, renderWidth, renderHeight, finalOffsetX, finalOffsetY, blockStates, onAction)
         }
 
+        // Definition der WEICHEN
         val switches = listOf(
             Triple("W100", 0.28f, 0.3f), Triple("W101", 0.42f, 0.31f),
             Triple("W102", 0.75f, 0.3f), Triple("W103", 0.76f, 0.61f),
@@ -99,7 +105,7 @@ fun ObereEbene(blockStates: Map<String, Boolean>, onAction: (String) -> Unit) {
         )
 
         switches.forEach { (id, x, y) ->
-            TrackSwitch(id, x, y, renderWidth, renderHeight, finalOffsetX, finalOffsetY, onAction)
+            TrackSwitch(id, x, y, renderWidth, renderHeight, finalOffsetX, finalOffsetY, switchStates, onAction)
         }
     }
 }

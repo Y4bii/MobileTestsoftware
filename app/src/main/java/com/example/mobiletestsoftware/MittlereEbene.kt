@@ -19,7 +19,11 @@ import androidx.compose.ui.unit.dp
 
 @SuppressLint("UnusedBoxWithConstraintsScope")
 @Composable
-fun MittlereEbene(blockStates: Map<String, Boolean>, onAction: (String) -> Unit) {
+fun MittlereEbene(
+    blockStates: Map<String, Boolean>,
+    switchStates: Map<String, Boolean>,
+    onAction: (String) -> Unit
+) {
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
 
         // --- POSITIONIERUNG ---
@@ -66,6 +70,7 @@ fun MittlereEbene(blockStates: Map<String, Boolean>, onAction: (String) -> Unit)
 
         Box(modifier = Modifier.fillMaxSize().padding(10.dp).border(10.dp, Color.White))
 
+        // Definition der STRECKENBLÖCKE
         val blocks = listOf(
             Triple("B200", 0.985f, 0.42f), Triple("B201", 0.935f, 0.42f),
             Triple("B202", 0.71f, 0.2f), Triple("B203", 0.7425f, 0.83f),
@@ -83,20 +88,20 @@ fun MittlereEbene(blockStates: Map<String, Boolean>, onAction: (String) -> Unit)
             TrackBlock(id, x, y, renderWidth, renderHeight, finalOffsetX, finalOffsetY, blockStates, onAction)
         }
 
+        // Definition der WEICHEN
         val switches = listOf(
             Triple("W200", 0.68f, 0.94f), Triple("W201", 0.77f, 0.94f),
             Triple("W202", 0.7375f, 0.0225f), Triple("W203", 0.6925f, 0.0225f),
             Triple("W204", 0.645f, 0.0225f), Triple("W205", 0.71f, 0.12f),
-            Triple("W206", 0.58f, 0.24f), Triple("W207", 0.58f, 0.78f),
+            Triple("W206", 0.28f, 0.09f), Triple("W207", 0.28f, 0.94f),
             Triple("W208", 0.45f, 0.74f), Triple("W209", 0.28f, 0.09f),
             Triple("W210", 0.28f, 0.94f), Triple("W211", 0.685f, 0.41f),
 
             Triple("K200", 0.49f, 0.52f)
-
         )
 
         switches.forEach { (id, x, y) ->
-            TrackSwitch(id, x, y, renderWidth, renderHeight, finalOffsetX, finalOffsetY, onAction)
+            TrackSwitch(id, x, y, renderWidth, renderHeight, finalOffsetX, finalOffsetY, switchStates, onAction)
         }
     }
 }
