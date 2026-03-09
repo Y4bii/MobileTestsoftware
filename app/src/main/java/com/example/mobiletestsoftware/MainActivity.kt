@@ -177,16 +177,17 @@ class MainActivity : ComponentActivity() {
                     val client = serverSocket.accept()
                     runOnUiThread {
                         statusReceived = "TCP Verbindung erhalten"
+
+                        if (wantsConnection) {
+                            isConnected = true
+                            isConnecting = false
+                        }
                     }
                     val input = client.getInputStream().bufferedReader().readLine()
 
                     runOnUiThread {
                         statusReceived = input ?: ""
                         lastResponseTime = System.currentTimeMillis() // Watchdog-Reset
-                        if (wantsConnection) {
-                            isConnected = true
-                            isConnecting = false
-                        }
                     }
                     client.close()
                 }
@@ -304,19 +305,29 @@ class MainActivity : ComponentActivity() {
     }
 
     /**
-     * Überwacht die Verbindung. Wenn > 5 Sekunden keine Antwort kommt,
+     * Überwacht die Verbindung. Wenn > 15 Sekunden keine Antwort kommt,
      * wird der Status auf "Verloren" gesetzt.
      */
     private fun startConnectionWatchdog() {
         watchdogJob?.cancel()
         watchdogJob = lifecycleScope.launch(Dispatchers.Default) {
             while (isActive) {
-                if (isConnected && (System.currentTimeMillis() - lastResponseTime > 5000)) {
-                    isConnected = false
-                    isConnecting = false
-                    runOnUiThread { statusSent = "Verbindung verloren" }
+                delay(5000)
+
+                val silenceDuration = System.currentTimeMillis() - lastResponseTime
+
+                // Timeout erst nach 25 Sekunden (erlaubt 2 verpasste Heartbeats)
+                if (isConnected && (silenceDuration > 25000)) {
+                    runOnUiThread {
+                        isConnected = false
+                        isConnected = false
+                        isConnecting = false
+                        wantsConnection = false
+                        statusSent = "Verbindung verloren (Timeout)"
+
+                        stopConnectionLogic()
+                    }
                 }
-                delay(1000)
             }
         }
     }
