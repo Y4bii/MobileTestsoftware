@@ -11,6 +11,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -71,6 +72,8 @@ class MainActivity : ComponentActivity() {
     // Key: ID (z.B. "B101"), Value: true (AN/Grün/S) / false (AUS/Rot/C).
     private val blockStates = mutableStateMapOf<String, Boolean>()
     private val switchStates = mutableStateMapOf<String, Boolean>() // Zentrale Speicherung der Weichenzustände
+
+    private var activeLiftLevel by mutableStateOf<Int?>(null)
 
     // --- UI Navigation ---
     private var selectedLevel by mutableStateOf("Ablaufberg") // Aktuell angezeigter Gleisplan
@@ -256,6 +259,16 @@ class MainActivity : ComponentActivity() {
      * @param action Der Befehlscode (z.B. "W0011" oder "B1000").
      */
     private fun handleTrackAction(action: String) {
+        // Logik für Lift
+        if (action.startsWith("L")) {
+            if (!isEmergencyStopActive) {
+                val level = action.last().digitToInt()
+                activeLiftLevel = level
+                sendUdpBroadcast(action)
+            }
+            return
+        }
+
         val id = action.substring(0, action.length - 1) // ID extrahieren (z.B. "B100")
         val state = action.last() == '1'               // Status extrahieren ('1' = true)
 
@@ -286,9 +299,69 @@ class MainActivity : ComponentActivity() {
             allSwitches.forEach { id ->
                 val state = switchStates[id] ?: true
                 sendUdpBroadcast("${id}${if (state) "1" else "0"}")
-                Thread.sleep(50)
+
+                // Delay zwischen Nachrichten
+                Thread.sleep(150)
             }
         }.start()
+    }
+
+    /**
+     * Die Lift-Steuerung mit Buttons im gleichen Stil wie die restliche App.
+     */
+    @Composable
+    fun LiftControl(activeLevel: Int?, blockStates: Map<String, Boolean>, onAction: (String) -> Unit) {
+        Column(
+            modifier = Modifier.fillMaxSize().padding(vertical = 10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text("LIFT", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
+            Spacer(modifier = Modifier.height(10.dp))
+
+            val liftLevels = listOf(1, 2, 3)
+            liftLevels.forEach { num ->
+                val isActive = activeLevel == num
+                // Klickbar nur wenn: nicht aktiv UND System läuft
+                val canClick = !isActive && !isEmergencyStopActive
+
+                Button(
+                    onClick = { onAction("L400$num") },
+                    enabled = canClick,
+                    modifier = Modifier.padding(vertical = 4.dp).size(45.dp),
+                    shape = RectangleShape,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (isActive) Color(0xFF4CAF50) else Color(0xFF00394A),
+                        disabledContainerColor = if (isActive) Color(0xFF4CAF50) else Color(0xFF9E9E9E),
+                        disabledContentColor = Color.White
+                    ),
+                    contentPadding = PaddingValues(0.dp)
+                ) {
+                    Text("L0$num", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+            Divider(modifier = Modifier.width(40.dp), color = Color.LightGray)
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Streckenblock auf dem Lift B400
+            val isBlockActive = blockStates["B400"] ?: false
+            Button(
+                onClick = { onAction("B400${if (isBlockActive) "0" else "1"}") },
+                modifier = Modifier.size(45.dp),
+                shape = RectangleShape,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = if (isBlockActive) Color(0xFF4CAF50) else Color(0xFFF44336)
+                ),
+                contentPadding = PaddingValues(0.dp)
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("B400", fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    Text(if (isBlockActive) "ON" else "OFF", fontSize = 9.sp)
+                }
+            }
+        }
     }
 
     // ========================================================================
@@ -465,16 +538,28 @@ class MainActivity : ComponentActivity() {
             // ----------------------------------------------------------------
             // MAIN CONTENT BEREICH (Gleispläne)
             // ----------------------------------------------------------------
-            Box(modifier = Modifier.weight(0.8f).fillMaxWidth().background(Color.White)) {
-                // Lädt die entsprechende Ebene basierend auf der Auswahl im Dropdown
-                when (selectedLevel) {
-                    "Ablaufberg" -> Ablaufberg(blockStates, switchStates, ::handleTrackAction)
-                    "Obere Ebene" -> ObereEbene(blockStates, switchStates, ::handleTrackAction)
-                    "Mittlere Ebene" -> MittlereEbene(blockStates, switchStates, ::handleTrackAction)
+            Row(modifier = Modifier.weight(0.8f).fillMaxWidth()) {
+
+                // LINKS: Lift-Bereich (Immer sichtbar)
+                Surface(
+                    modifier = Modifier.width(80.dp).fillMaxHeight(),
+                    color = Color(0xFFF0F0F0)
+                ) {
+                    LiftControl(activeLiftLevel, blockStates, ::handleTrackAction)
+                }
+
+                Box(modifier = Modifier.fillMaxHeight().width(1.dp).background(dividerColor))
+
+                // RECHTS: Gleisplan-Inhalt
+                Box(modifier = Modifier.weight(1f).fillMaxHeight()) {
+                    when (selectedLevel) {
+                        "Ablaufberg" -> Ablaufberg(blockStates, switchStates, ::handleTrackAction)
+                        "Obere Ebene" -> ObereEbene(blockStates, switchStates, ::handleTrackAction)
+                        "Mittlere Ebene" -> MittlereEbene(blockStates, switchStates, ::handleTrackAction)
+                    }
                 }
             }
 
-            // Trennlinie Content -> Footer
             Divider(color = dividerColor, thickness = 1.dp)
 
             // ----------------------------------------------------------------
