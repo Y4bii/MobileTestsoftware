@@ -316,24 +316,26 @@ class MainActivity : ComponentActivity() {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text("LIFT", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
-            Spacer(modifier = Modifier.height(10.dp))
+            // Überschrift präsenter und in Schwarz
+            Text("LIFT", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color.Black)
+            Spacer(modifier = Modifier.height(12.dp))
 
+            // Ebenen-Auswahl L01 bis L03 (Stil wie Weichen/Blöcke)
             val liftLevels = listOf(1, 2, 3)
             liftLevels.forEach { num ->
                 val isActive = activeLevel == num
-                // Klickbar nur wenn: nicht aktiv UND System läuft
                 val canClick = !isActive && !isEmergencyStopActive
 
                 Button(
                     onClick = { onAction("L400$num") },
                     enabled = canClick,
-                    modifier = Modifier.padding(vertical = 4.dp).size(45.dp),
+                    modifier = Modifier.padding(vertical = 4.dp).size(40.dp), // Fix auf 40.dp
                     shape = RectangleShape,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = if (isActive) Color(0xFF4CAF50) else Color(0xFF00394A),
                         disabledContainerColor = if (isActive) Color(0xFF4CAF50) else Color(0xFF9E9E9E),
-                        disabledContentColor = Color.White
+                        contentColor = Color.White,         // Schrift immer Weiß
+                        disabledContentColor = Color.White   // Auch im gesperrten Zustand Weiß
                     ),
                     contentPadding = PaddingValues(0.dp)
                 ) {
@@ -341,24 +343,29 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
-            Divider(modifier = Modifier.width(40.dp), color = Color.LightGray)
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+            Divider(modifier = Modifier.width(40.dp), color = Color(0xFFCCCCCC), thickness = 1.dp)
+            Spacer(modifier = Modifier.height(16.dp))
 
-            // Streckenblock auf dem Lift B400
+            // Streckenblock auf dem Lift B400 (Exakte Kopie der TrackBlock-Optik)
             val isBlockActive = blockStates["B400"] ?: false
             Button(
                 onClick = { onAction("B400${if (isBlockActive) "0" else "1"}") },
-                modifier = Modifier.size(45.dp),
+                modifier = Modifier.size(40.dp), // Fix auf 40.dp
                 shape = RectangleShape,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isBlockActive) Color(0xFF4CAF50) else Color(0xFFF44336)
+                    containerColor = if (isBlockActive) Color(0xFF4CAF50) else Color(0xFFF44336),
+                    contentColor = Color.White
                 ),
                 contentPadding = PaddingValues(0.dp)
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("B400", fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                    Text(if (isBlockActive) "ON" else "OFF", fontSize = 9.sp)
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy((-10).dp, Alignment.CenterVertically) // Gleicher Abstand wie TrackBlock
+                ) {
+                    Text("B01", fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Text(if (isBlockActive) "ON" else "OFF", fontSize = 10.sp)
                 }
             }
         }
