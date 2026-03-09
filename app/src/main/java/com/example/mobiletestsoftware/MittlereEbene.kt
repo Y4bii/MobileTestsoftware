@@ -80,8 +80,8 @@ fun MittlereEbene(
             Triple("B210", 0.47f, 0.65f), Triple("B211", 0.47f, 0.40f),
             Triple("B212", 0.48f, 0.15f), Triple("B213", 0.25f, 0.4f),
             Triple("B214", 0.12f, 0.4f), Triple("B215", 0.15f, 0.9f),
-            Triple("B216", 0.17f, 0.12f), Triple("B218", 0.4f, 0.17f),
-            Triple("B219", 0.38f, 0.86f)
+            Triple("B216", 0.17f, 0.12f), Triple("B217", 0.4f, 0.17f),
+            Triple("B218", 0.38f, 0.86f), Triple("B219", 0.695f, 0.515f)
         )
 
         blocks.forEach { (id, x, y) ->

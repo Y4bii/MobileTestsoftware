@@ -81,7 +81,7 @@ fun ObereEbene(
             Triple("B112", 0.04f, 0.7f), Triple("B113", 0.07f, 0.45f),
             Triple("B114", 0.13f, 0.45f), Triple("B115", 0.92f, 0.45f),
             Triple("B116", 0.83f, 0.79f), Triple("B117", 0.83f, 0.88f),
-            Triple("B118", 0.83f, 0.1f)
+            Triple("B118", 0.83f, 0.1f), Triple("B119", 0.08f, 0.1f)
         )
 
         blocks.forEach { (id, x, y) ->
@@ -97,6 +97,7 @@ fun ObereEbene(
             Triple("W108", 0.71f, 0.1f), Triple("W109", 0.96f, 0.28f),
             Triple("W110", 0.96f, 0.67f), Triple("W111", 0.94f, 0.84f),
             Triple("W112", 0.64f, 0.92f), Triple("W113", 0.22f, 0.92f),
+            Triple("W114", 0.2f, 0.1f),
 
             Triple("K100", 0.6f, 0.31f),
             Triple("K101", 0.36f, 0.21f),

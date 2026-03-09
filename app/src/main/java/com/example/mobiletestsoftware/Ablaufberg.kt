@@ -83,9 +83,9 @@ fun Ablaufberg(
             Triple("B002", 0.82f, 0.8485f),
             Triple("B003", 0.82f, 0.92f),
             Triple("B004", 0.565f, 0.69f),
-            Triple("B006", 0.21f, 0.765f),
-            Triple("B007", 0.21f, 0.84f),
-            Triple("B008", 0.4925f, 0.04f)
+            Triple("B005", 0.21f, 0.765f),
+            Triple("B006", 0.21f, 0.84f),
+            Triple("B007", 0.4925f, 0.04f)
         )
 
         blocks.forEach { (id, x, y) ->
