@@ -93,7 +93,7 @@ fun MittlereEbene(
             Triple("W200", 0.68f, 0.94f), Triple("W201", 0.77f, 0.94f),
             Triple("W202", 0.7375f, 0.0225f), Triple("W203", 0.6925f, 0.0225f),
             Triple("W204", 0.645f, 0.0225f), Triple("W205", 0.71f, 0.12f),
-            Triple("W206", 0.28f, 0.09f), Triple("W207", 0.28f, 0.94f),
+            Triple("W206", 0.57f, 0.23f), Triple("W207", 0.57f, 0.78f),
             Triple("W208", 0.45f, 0.74f), Triple("W209", 0.28f, 0.09f),
             Triple("W210", 0.28f, 0.94f), Triple("W211", 0.685f, 0.41f),
 
