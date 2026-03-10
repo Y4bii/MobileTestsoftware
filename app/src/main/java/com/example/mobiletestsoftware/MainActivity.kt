@@ -1,5 +1,6 @@
 package com.example.mobiletestsoftware
 
+import android.R.id.input
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.enableEdgeToEdge
@@ -179,8 +180,10 @@ class MainActivity : ComponentActivity() {
                 while (true) {
                     // Blockiert, bis ein TCP-Handshake (ACK) erfolgt
                     val client = serverSocket.accept()
+                    val input = client.getInputStream().bufferedReader().readLine()
+
                     runOnUiThread {
-                        statusReceived = "Handshake erfolgreich"
+                        statusReceived = input ?: ""
                         lastResponseTime = System.currentTimeMillis() // Watchdog-Reset durch Handshake
 
                         if (wantsConnection) {
@@ -301,7 +304,7 @@ class MainActivity : ComponentActivity() {
                 sendUdpBroadcast("${id}${if (state) "1" else "0"}")
 
                 // Delay zwischen Nachrichten
-                Thread.sleep(150)
+                Thread.sleep(500)
             }
         }.start()
     }
