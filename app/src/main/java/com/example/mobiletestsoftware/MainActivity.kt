@@ -181,9 +181,10 @@ class MainActivity : ComponentActivity() {
                     // Blockiert, bis ein TCP-Handshake (ACK) erfolgt
                     val client = serverSocket.accept()
                     val input = client.getInputStream().bufferedReader().readLine()
+                    println(input)
 
                     runOnUiThread {
-                        statusReceived = input ?: ""
+                        statusReceived = "Handshake"
                         lastResponseTime = System.currentTimeMillis() // Watchdog-Reset durch Handshake
 
                         if (wantsConnection) {
@@ -397,6 +398,8 @@ class MainActivity : ComponentActivity() {
             startConnectionWatchdog()
             startHeartbeat()
             if (!isConnected) isConnecting = true
+            print("TEST")
+            // sendUdpBroadcast("Mobile-Testapplication:" + IP_ADDRESS)
             sendUdpBroadcast("modellbahn_server:broadcast_ip")
 
             setSystemState(true)
