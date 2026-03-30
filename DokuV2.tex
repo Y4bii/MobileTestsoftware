@@ -1,0 +1,488 @@
+\documentclass{article}
+
+\usepackage[T1]{fontenc}
+\usepackage{amsmath, amssymb}
+\usepackage{ngerman}
+\usepackage{graphicx}
+\usepackage{tabularx}
+\usepackage{mathptmx}
+\usepackage[scaled=.92]{helvet}
+\usepackage{courier}
+\usepackage{float}
+\usepackage{url}
+
+\begin{document}
+
+\parindent0cm % verhindert das Einrücken von Absätzen
+
+% Hier wird die Titelseite gebastelt
+% Zuerst wird die Seite auf empty eingestellt, das heißt sie hat keine
+% Seitenzahl und auch keine Kopf- bzw. Fußzeile
+\thispagestyle{empty}
+
+% Der Titel wird zentriert in fetter riesiger Schrift gesetzt.
+
+\begin{center}
+\begin{Huge}
+\textbf{Bachelorprojekt Informatik \\ \vspace{0.2cm}
+CS3701-KP05\\ \vspace{2.5cm}
+Institut für Telematik\\ \vspace{0.2cm}
+Wintersemester 2025/26\\\vspace{2.5cm}
+Entwicklung einer Android-App zur mobilen
+Überwachung der H0-Modellbahn}\vspace{1.5cm}
+\end{Huge}
+
+% Weiter in großer Schrift
+
+\begin{huge}
+Thorben Heinz, 756972 \\
+Yannic Biallas, 771216 \\
+Lübeck, \today
+
+\textbf{Leitung:} Prof. Dr. Stefan Fischer
+
+\textbf{Mitarbeiter:} Ingrid Schumacher, Dipl.-Inf.\\
+Klaus-Dieter Schumacher, Dipl.-Inf.
+\end{huge}
+
+\end{center}
+
+% Inhaltsverzeichnis
+
+\setcounter{page}{0}
+
+\newpage
+\pagenumbering{roman}
+
+
+\tableofcontents
+
+\newpage
+
+% Start der eigentlichen Arbeit
+
+\setcounter{page}{0}
+\pagenumbering{arabic}
+
+\section{Ziel der Arbeit}
+Die Android-App \textbf{\glqq{}MobileTrainTestsoftware\grqq{}} dient als mobile Erweiterung der Leitstelle und ergänzt die auf den Steuerrechnern installierte Testsoftware.
+Die momentan auf den Steuerrechnern installierte Testsoftware hat den Nachteil, dass zwei Personen zum Testen der jeweiligen Ebene notwendig sind.
+Unmittelbar nach dem Schalten einer Komponente ist diese bereits geschaltet und es ist nicht leicht erkennbar, ob dies problemlos abgelaufen ist.
+Mit der von uns entwickelten Android-App \glqq{}MobileTrainTestsoftware\grqq{} kann eine geschaltete Komponente direkt beobachtet werden, da die Nutzung der App mobil möglich ist.
+
+\subsection{Anforderungen}
+Zu Beginn des Projektes wurde von unserer Auftraggeberin Frau Schumacher festgelegt, welche Anforderungen unsere App erfüllen soll.
+Die zu entwickelnde App soll alle Ebenen der Modelleisenbahnanlage darstellen und steuern können.
+Momentan existieren die Ebenen Ablaufberg (Ebene 0), die obere Ebene (Ebene 1), die mittlere Ebene (Ebene 2) und der Lift-Abschnitt (Ebene 4).
+In Planung ist die untere Ebene (Ebene 3), welche in unserem Projekt allerdings noch nicht berücksichtigt wird.
+Weichen und Streckenblöcke sollen mit dem Gleisplan dargestellt sein und durch interaktives Feedback steuerbar sein.
+Außerdem soll die App über eine angenehme und moderne UI verfügen.
+
+\section{Analyse bisheriger Technologien}
+\subsection{Netzwerkkommunikation}
+Die Kommunikation wird in der Modelleisenbahnanlage auf unterschiedliche Weise umgesetzt.
+Dabei befinden sich alle Geräte im selben Netzwerk, über welches die Kommunikation läuft.
+
+Zum einen gibt es die Leitstelle (Pi400).
+Sie kommuniziert mit auf der Anlage verteilten Steuerrechnern (RPi4) zum Ändern der Zustände von Weichen oder Streckenblöcken.
+Die Leitstelle sendet dazu zunächst die eigene IP-Adresse per UDP-Broadcast an alle, im Netzwerk vorhandenen, Steuerrechner.
+Gleichzeitig wird ein Thread zum Annehmen einer TCP-Verbindung zu den jeweiligen Steuerrechnern gestartet.
+Jede TCP-Verbindung kann zum Senden von Informationen (neue Komponentenkonfiguration) oder dem Empfang von Zuständen der Komponenten verwendet werden.
+Dazu läuft jede TCP-Verbindung in einem eigenen Thread. Wenn eine definierte Anzahl Steuerrechner eine TCP-Verbindung zu der Leitstelle aufgebaut haben, wird ein Initialzustand (für Weichen und Streckenblöcke) an alle Steuerrechner gesendet.
+Eine Zustandsänderung einer Komponente wird per UDP übertragen und es wird auf eine Antwort des zuständigen Steuerrechners gewartet.
+Nachzulesen ist dies in der main.py und Network\_new.py in der Leitstellen Software.
+Die Steuerrechner wiederum warten auf einen ankommenden UDP-Broadcast der Leitstelle.
+Nachdem die UDP- und TCP-Sockets eingerichtet wurden, wird der UDP-Socket abgehört.
+Erfasst der Steuerrechner ein UDP-Broadcast, so baut der Steuerrechner eine TCP-Verbindung zu der IP-Adresse der Leitstelle auf, welche in der UDP-Nachricht mitgesendet wird.
+Wichtig ist, dass der Steuerrechner eine TCP-Verbindung zum Port 6005 öffnet.
+Würde an der Leitstelle ein anderer Port für die TCP-Verbindung geöffnet, so könnte keine Verbindung hergestellt werden.
+Die IP-Adresse muss für den Steuerrechner nicht im String der UDP-Nachricht enthalten sein, da diese schon im Daten-Paket vorhanden ist.
+Somit erwarten die Steuerrechner für den Verbindungsaufbau per UDP-Nachricht keinen spezifischen String.
+Der Steuerrechner des Lift-Blocks erwartet allerdings einen spezifischen String (\texttt{modellbahn\_server:broadcast\_ip}).
+Wird dieser nicht gesendet, so baut der Steuerrechner des Lift-Abschnittes keine Verbindung auf.
+Über die aufgebaute TCP-Verbindung wird eine Nachricht mit dem erfolgreichen Verbindungsaufbau an die Leitstelle zurückgeschickt.
+Anschließend wird die UDP-Verbindung vom Steuerrechner in einem eigenen Thread abgehört.
+Nachdem alles initialisiert ist, wird in die Main-Loop gewechselt, wo das jeweils älteste Element einer zuvor initialisierten Queue behandelt wird.
+Wird eine Nachricht via UDP empfangen, so wird in dieser Nachricht überprüft, ob der jeweilige Steuerrechner angesprochen wird.
+Sollte das nicht der Fall sein, wird die Nachricht verworfen.
+Sollte das Level dem Level des Steuerrechners entsprechen, so wird der Befehl in der Queue abgelegt.
+Nach der Ausführung des Befehls, wird mit Hilfe des Communicators eine Bestätigung der Ausführung über TCP an die Leitstelle zurückgesendet.
+Nachzulesen ist dies in \_\_main\_\_.py und communicator.py in der Software des Steuerrechners.
+
+\subsection{Schaltungsbefehle für Anlagenkomponenten}
+In diesem Abschnitt erläutern wir die Schaltbefehle für auf der Modellbahnanlage eingesetzte Komponenten.
+Schaltbar sind Weichen, Streckenblöcke und der Lift.
+
+Weichen sind dabei in normale Zwei-Weichen, Drei-Weichen und Kreuzweichen einzuteilen.
+Von diesen sind allerdings momentan (Kenntnisstand siehe Datum auf dem Deckblatt) nur die klassischen Zwei-Weichen und Kreuzweichen schaltbar.
+Ein Befehl zum Schalten einer Zwei-Weiche ist dabei wie folgt aufgebaut:
+
+\texttt{W\{Ebenenlevel\}\{(Nummer der Weiche) - 1\}\{1 = gerade | 0 = gebogen\}}
+Ein möglicher Befehl ist also z.B. W0030, um auf der Ebene 0 (Ablaufberg) Zwei-Weiche mit Nummer 4 gebogen zu schalten.
+
+Ein Befehl zum Schalten einer Kreuz-Weiche ist dabei wie folgt aufgebaut:
+
+\texttt{K\{Ebenenlevel\}\{(Nummer der Weiche) - 1\}\{1 = gerade | 0 = gebogen\}}
+Ein möglicher Befehl ist also z.B. K0000, um auf der Ebene 0 (Ablaufberg) Kreuz-Weiche mit Nummer 1 gebogen zu schalten.
+
+Ein Befehl zum Schalten eines Streckenblockes ist dabei wie folgt aufgebaut:
+
+\texttt{B\{Ebenenlevel\}\{(Nummer des Blocks) - 1\}\{1 = aktiv | 0 = inaktiv\}}
+Ein möglicher Befehl ist also z.B. B0071, um auf der Ebene 0 (Ablaufberg) Streckenblock Nummer 8 zu aktivieren.
+Er wird nun mit Strom versorgt.
+\\
+Ein Befehl zum Schalten des Lifts ist dabei wie folgt aufgebaut:
+
+\texttt{L\{4\}\{00\}\{Ebene zu der der Lift fahren soll\}}
+Ein möglicher Befehl ist also z.B. L4002, um den Lift zur Ebene 2 (Obere Ebene) zu fahren.
+Der Ablaufberg hat die Nummer 1, die Obere Ebene hat die Nummer 2 und die Mittlere Ebene hat die Nummer 3.
+
+\section{Umsetzung der Android App}
+
+\subsection{Planung der Android App und Entwicklungsschritte}
+Nachdem die Anforderungen an unsere App festgelegt wurden, haben wir eine Einführung in die Modelleisenbahnanlage bekommen.
+Dabei haben wir uns die Gleispläne und die eingesetzten Geräte (Steuerrechner, Leitstelle, Tablet) angesehen.
+Zu der Steuerung via Steuerrechner haben wir mit direkten I2C Befehlen einige Weichen testweise über einen der Steuerrechner geschaltet.
+Dies half uns, ein Verständnis für die Befehle und Schaltungslogik der Anlage zu bekommen.
+Als Resultat haben wir einen Arbeitsplan entwickelt.
+
+Im Vorhinein haben wir vereinbart, Schritte arbeitsteilig anzugehen.
+Yannic entschied sich, die Gestaltung der App sowie das Frontend zu übernehmen, während Thorben die Netzwerkkommunikation und das Backend übernahm.
+Der Arbeitsplan enthielt folgende Schritte:
+\begin{enumerate}
+    \item Bezeichnung der Weichen und Streckenblöcke auf der Anlage mit Etikitiergerät anbringen
+    \item Skizze für den Aufbau der App entwickeln (Yannic)
+    \item Analyse der vorhandenen Technologie und Kommunikationstechnologie der App festlegen (Thorben)
+    \item Mockup der App erstellen (Yannic)
+    \item Erstes Element der Anlage in Praxisversuch schalten (Thorben)
+    \item Alle anderen Funktionen umsetzen (Yannic und Thorben)
+    \item Front- und Backend zusammenfügen
+    \item Iteration ab Punkt 6, falls der Auftraggeber nicht zufrieden ist
+    \item Abgabe des finalen Produkts und Dokumentation
+\end{enumerate}
+
+Nach der ersten Analyse der vorhandenen Technologien haben wir uns bezüglich der Netzwerkkommunikation zuerst Gedanken darüber gemacht, wie wir Nachrichten an Steuerrechner senden können.
+Unsere erste Überlegung war, alle Steuerrechner einzeln direkt via SSH anzusprechen.
+Allerdings wurde uns schnell bewusst, dass diese Idee nicht umsetzbar ist, da die Steuerrechner eine dynamische IP-Adresse haben.
+Für eine direkte Kommunikation via SSH bräuchten wir die IP Adresse der jeweiligen Steuerrechner.
+
+Nachdem wir diese Idee aufgegeben hatten, haben wir uns auf eine Internetprotokoll basierte Kommunikation wie zwischen Leitstelle und Steuerrechner festgelegt.
+Um einen ähnlichen Ansatz wie bei der vorhandenen Kommunikation zu verfolgen, war es nötig, die bereits vorhanden Umsetzungen zu analysieren.
+Dazu zählte auch eine Analyse der gesendeten Befehle zum Schalten von Komponenten und die Verarbeitung der gesendeten Antworten.
+Wir haben uns als erstes auf das Senden der benötigten Befehle konzentriert.
+Parallel haben wir bereits einen ersten Mockup der App erstellt.
+
+Nachdem wir die Analyse durchgeführt hatten, haben wir in einem ersten Test versucht festzustellen, ob die Kommunikation auch mit einer Android App funktioniert.
+Dazu haben wir die App zuerst im Editor auf einem emulierten Android Gerät installiert.
+Hier haben einige benötigte Funktionalitäten allerdings nicht funktioniert.
+Nach einiger Recherche haben wir festgestellt, dass Kommunikationen (z.B. der Broadcast an die Adresse \texttt{255.255.255.255}) nie das Emulator-NAT verlassen, weshalb wir die Nachrichten nicht auf einem nebenlaufenden Gerät im selben WLAN empfangen konnten.
+Die Installation der App auf dem bereitgestellten Android Tablet ermöglichte uns allerdings alle benötigten Kommunikationsmethoden zu verwenden.
+Getestet haben wir dies zu Beginn vor Ort an der Anlage mit einer einfachen App, die nur einen Button enthielt, der lediglich eine einzige Weiche (Weiche 05 auf dem Ablaufberg) schaltet konnte.
+Die Steuerrechner sind beim Testen zu Beginn abgestürzt, da unsere Testversion noch keinen TCP-Listener hatte.
+Nachdem die Steuerrechner allerdings korrekt mit der Leitstelle verbunden waren, war es kein Problem eine UDP-Nachricht von einem zweiten Gerät aus zusätzlich zu der Leitstelle an die Steuerrechner zu senden.
+Das Ergebnis dieses Tests war, dass wir ohne Initialisierung der Steuerrechner eine Weiche korrekt schalten konnten.
+Nach diesem Ergebnis haben wir die grafische Benutzeroberfläche weiterentwickelt und an einer TCP-Listener-Methode gearbeitet.
+
+Bei einem weiteren Test vor Ort haben wir die erstellte GUI und die Kommunikation getestet.
+Mit dieser Version des Prototypen war es uns möglich, Befehle zum Schalten von Streckenblöcken und Weichen über den UDP-Broadcast zu übertragen, die nahezu korrekt umgesetzt wurden.
+Es fiel uns auf, dass die Blöcke und Weichen anders als von uns gedacht indiziert sind.
+Auch funktionierte die Initialisierung der Steuerrechner durch die App noch nicht und Antworten des Steuerrechners wurden ebenfalls noch nicht verarbeitet.
+Als neue Anforderung kam bei diesem Termin das Schalten der Kreuzweichen hinzu.
+
+Beim Erneuten Testen der App nach der Korrektur der Fehler und Ergänzung der Anforderungen, fiel auf, dass der Connect-Button noch nicht funktionierte.
+Alle Anpassungen der GUI, wie das genaue Positionieren der Buttons, haben problemlos funktioniert.
+Als neue Anforderung kam bei diesem Termin hinzu, dass der Lift-Abschnitt in der App dargestellt und gesteuert werden soll.
+Darüber hinaus wurden Streckenblöcke umgenannt, weshalb wir die Adressierung in unserer App anpassen.
+Bei der Analyse dieses Problems stellte sich heraus, dass unsere App nach dem initialen Handshake mit den jeweiligen Steuerrechnern den TCP-Socket wieder schließt, weshalb wir nach unserer Steuerlogik nicht mehr verbunden sind.
+Dies erklärt auch, warum der Verbindungsbutton disconnected anzeigt.
+Die Steuerrechner halten hingegen die TCP-Socket-Verbindung zur App die ganze Zeit offen und versuchen eine über UDP eingegangene Nachricht zu bestätigen.
+Wir haben versucht dieses Problem zu lösen und haben verschiedene Lösungen erarbeitet und getestet.
+Dabei fiel auch auf, dass die Steuerrechner beim Senden der Antwort auf eine UDP-Nachricht kein \texttt{\textbackslash n} verwenden, wodurch die von uns verwendete Methode \texttt{readline} für immer blockiert, da keine neue Line angezeigt wird.
+Dieses Problem konnten wir mit timeoutbedingtem Lesen umgehen, da wir die Software der Steuerrechner nicht anpassen wollten.
+Auf die Umsetzung der Netzwerkkommunikation gehen wir im nächsten Abschnitt ein.
+
+\subsection{Netzwerkkommunikation}
+Die Android App befindet sich im selben WLAN wie die anderen Komponenten der Modelleisenbahnanlage.
+Dies ist das Netzwerk \textbf{eisenbahn}, welches aktiv ist, sobald dies an der Fritz-Box eingeschaltet ist.
+Die App hat im Android-Manifest die Erlaubnis, Netzwerkkommunikation zu nutzen.
+Technologien, die wir uns bei der Kommunikation zu Nutze machen sind die Internetprotokolle TCP und UDP.
+
+Beim Öffnen der App ist unsere App per Default mit keinem Gerät verbunden, was auch auf dem Verbindungs-Button mit Disconnected und im Statustext Gesendet angezeigt wird.
+Werden Aktionen wie das Schalten von Komponenten der Anlage vorgenommen, so werden diese im Disconnected Modus lokal gespeichert und nicht über UDP versendet.
+Möchten wir eine Verbindung herstellen, so aktivieren wir den Button.
+Es erscheint der Text connecting und der Button ist nun orange.
+Im Hintergrund wird nun eine Nachricht via UDP-Broadcast an alle Netzwerkgeräte im selben Netzwerk gesendet.
+Gleichzeitig wird ein TCP-Listener gestartet, der den TCP-Port 6005 abhört.
+Die UDP-Nachricht sieht wie folgt aus:
+\texttt{modellbahn\_server:broadcast\_ip}
+Dazu wird ein UDP-Socket eingerichtet und die Broadcast-Adresse \texttt{255.255.255.255} verwendet.
+UDP-Nachrichten enthalten einen String und das zugehörige Datenpaket, in dem auch die IP-Adresse enthalten ist.
+Der UDP-Broadcast läuft wie auch der TCP-Listener in einem eigenen Thread, um den Thread der App zu entlasten.
+Die gesendete UDP-Nachricht kann von allen im Netzwerk vorhandenen Geräten abgehört werden.
+
+Sollte der TCP-Listener einen Verbindungsaufbau erfassen, so wird dieser in einem neuen Thread behandelt.
+Dies ermöglicht, eine TCP-Verbindung mit mehreren Clients herzustellen.
+In diesem Fall sind die Clients die Steuerrechner der jeweiligen Modellbahn-Ebenen.
+Anders als bei der Leitstelle warten wir nicht auf eine Verbindung zu allen Steuerrechnern der Anlage, sondern öffnen so viele Threads, wie Verbindungen eingehen.
+
+Sobald ein Steuerrechner den UDP-Broadcast entdeckt, so stellt er eine TCP-Verbindung mit der Android App auf Port 6005 her.
+Der Button, der vorher noch connecting angezeigt hat, ist nun grün und zeigt verbunden an.
+Die nun verbundenen Steuerrechner warten jetzt auf Nachrichten der Android App.
+
+Wird eine Aktion wie etwa das Schalten einer Komponente in der App durchgeführt, so wird ein String mit dem dazugehörigen Befehl an die Steuerrechner via UDP-Nachricht gesendet.
+Alle Steuerrechner empfangen demnach die Nachricht, aber wie bereits bei der Analyse der bereits vorhandenen Technologien beschrieben, verarbeiten sie nur Nachrichten, die für sie vorgesehen sind.
+Sollte ein Befehl einem Steuerrechner zugehörig sein, so setzt er den Befehl um und antwortet mit einem Acknowledgement, welches eine Kopie des von der App gesendete Strings ist.
+Unsere App empfängt den String des Steuerrechners mit dem TCP-Listener und zeigt das Ack in dem Statustext empfangen an.
+
+Soll die Verbindung mit den Steuerrechnern unterbrochen werden, so kann über den Button mit einem Klick die TCP-Verbindung zu allen Clients geschlossen werden.
+Nach dem Klick auf den Button, ändert sich das Aussehen von grün und der Anzeige verbunden zu rot und Disconnected.
+Dies passiert auch, wenn der später genauer beschriebene Connection-Watchdog ein Timeout in der Verbindung feststellt, was daraufhindeutet, dass die Verbindung zum Client verloren wurde.
+
+Das Lesen von Antworten aus dem TCP-Stream haben wir nach einiger Überlegung mit Hilfe eines Timeout readings implementiert.
+Ein zeilenbasiertes Lesen aus dem TCP-Stream, wie von uns zwischenzeitlich verwendet, kann nicht verwendet werden, da die Steuerrechner am Ende einer einzelnen Nachricht nicht mit \textbackslash n antworten.
+Zeilenbasiertes Lesen würde hier blockieren.
+Daher haben wir Timeout reading umgesetzt, was solange wie die TCP-Verbindung aktiv ist, in einem regelmäßigen Abstand von einer Sekunde einen neuen String erzeugt und ausgibt, sofern etwas empfangen wurde.
+Nachzulesen ist dies in MainActivity.kt in den Methoden \texttt{sendUdpBroadcast(message: String)}, \texttt{startTcpListener()} und \texttt{stopTcpListener()}.
+
+\subsection{Architektur der App}
+In diesem Kapitel wird das technische Gerüst der App beschrieben.
+Da die Steuerrechner keine Zustandsrückmeldungen liefern, übernimmt die App die Rolle des alleinigen Zustandsverwalters („Single Source of Truth“).
+Um eine blockierfreie Bedienung zu gewährleisten, ist die Architektur konsequent auf Multithreading ausgelegt:
+Alle Netzwerkoperationen (UDP-Senden und TCP-Listening) laufen in dedizierten Hintergrund-Threads ab, um den Haupt-Thread der Benutzeroberfläche zu entlasten.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{App.png}
+
+    \caption{Benutzeroberfläche in der Ansicht Ablaufberg.}
+    \label{fig:ui_ansicht}
+\end{figure}
+
+
+\subsubsection{Initialisierung und Basiszustand}
+Sobald der Nutzer die Verbindung über den linken Button im Footer initiiert und der Handshake mit der Anlage erfolgreich war, tritt die App in einen definierten Basiszustand ein.
+In diesem Moment wird die Funktion \texttt{forceSyncSwitches()} aufgerufen.
+Diese sorgt dafür, dass alle in der App hinterlegten Weichenstellungen einmalig an die physische Anlage gesendet werden.
+Dadurch wird sichergestellt, dass die Software-Map und die reale Hardware zu Beginn einer Arbeitssitzung exakt denselben Stand aufweisen.
+Um Netzwerküberlastungen zu vermeiden, erfolgt das Senden der Weichenbefehle dabei sequenziell mit einer künstlichen Verzögerung von 500 ms zwischen den Paketen.
+
+
+\subsubsection{Sicherheitslogik}
+Da die Steuerung einer Modellanlage bei Fehlfunktionen zu Hardware-Schäden führen kann, wurden mehrere Sicherheitsstufen implementiert.
+
+Heartbeat: Die App und die Steuerrechner tauschen im Hintergrund ständig kleine „Lebenszeichen“ aus (alle 10 Sekunden ein \texttt{HEARTBEAT}-Signal).
+
+Watchdog: Bleibt die Antwort eines Steuerrechners für mehr als 25 Sekunden aus, erkennt die App eine instabile Verbindung und bricht den Vorgang sicherheitshalber ab (Auto-Disconnect).
+
+Not-Aus Button: Dieser Button fungiert als „Hauptschalter“ für Streckenblöcke.
+Nur wenn dieser aktiv ist, werden die Befehle an die Anlage übertragen.
+In einer Gefahrensituation kann durch einen Klick die gesamte Kommunikation unterbrochen und die Anlage in einen sicheren Zustand versetzt werden.
+
+Automatischer Nothalt:
+Durch die Implementierung der \texttt{onPause}-Lebenszyklusmethode der Android-Activity wird sichergestellt, dass die Anlage sofort in den Notstopp-Modus wechselt und die Verbindung trennt, sobald die App in den Hintergrund tritt.
+
+
+\subsubsection{Bedienkonzept}
+Die App unterscheidet funktional zwischen dem Stellen von Fahrwegen und dem Auslösen von Bewegungen.
+Diese Logik steuert, welche Befehle tatsächlich an die Steuerrechner übertragen werden.
+
+Vorbereitungsmodus (Not-Aus aktiv):
+In diesem Standardzustand nach dem Verbinden kann der Nutzer bereits alle Weichen und Kreuzweichen (\texttt{W...} und \texttt{K...}) schalten.
+Diese Befehle werden sofort per UDP übertragen, da sie keine unmittelbare Gefahr für den Fahrbetrieb darstellen.
+Interaktionen mit Streckenblöcken (\texttt{B...}) werden zwar in der UI visualisiert und in der internen Map gespeichert, jedoch noch nicht an die Hardware gesendet.
+Die Map dient hier als Puffer für den gewünschten Zielzustand. Der Lift (\texttt{L...}) lässt sich in diesem Modus gar nicht bedienen.
+
+Betriebsmodus (Start):
+Erst wenn der Nutzer den „Start“-Button drückt, wird der Not-Aus aufgehoben (\texttt{isEmergencyStopActive = false}).
+In diesem Moment erfolgt eine Synchronisation der Blöcke: Alle in der App vorbereiteten Block-Zustände werden gesammelt an die Hardware übertragen.
+Erst jetzt reagiert die Anlage physisch auf Block-Befehle. Der Lift ist nun auch ansteuerbar.
+
+
+\subsubsection{Responsive UI-Architektur}
+Eine zentrale technische Herausforderung der Architektur ist die korrekte Darstellung der interaktiven Elemente auf unterschiedlichen Tablet-Displays.
+Um eine hardware-unabhängige Positionierung zu erreichen, wurde ein System normierter Koordinaten implementiert.
+
+Dynamische Bildberechnung:
+Mithilfe der Komponente \texttt{BoxWithConstraints} berechnet die App zur Laufzeit das Seitenverhältnis des verfügbaren Bildschirms im Vergleich zur Originalgröße des Gleisplans.
+Daraus ergeben sich die tatsächlichen Render-Maße (\texttt{renderWidth}, \texttt{renderHeight}) sowie die notwendigen Offsets  (\texttt{final\-OffsetX}, \texttt{finalOffsetY}), um das Bild zentriert einzupassen.
+
+Relative Koordinaten:
+Alle Weichen und Blöcke sind in den Ebenen-Modulen nicht mit festen Pixelwerten, sondern mit relativen Faktoren (Werten zwischen 0.0 und 1.0) hinterlegt.
+
+Positions-Mapping:
+In der Komponente \texttt{TrackElement} wird die finale Position auf dem Display durch die mathematische Abbildung $Position = Offset + (Rendergr\text{ö\ss}e \cdot Faktor)$ bestimmt.
+Dadurch bleiben die Schaltflächen unabhängig von der Bildschirmauflösung oder dem Seitenverhältnis immer exakt an der korrekten Position über dem Gleisbild verankert.
+
+
+\subsubsection{Modularität und Wartbarkeit}
+Ein Kernaspekt der Software-Architektur ist die hohe Modularität, die eine einfache Wartung und Erweiterung des Systems ermöglicht.
+
+Kapselung der Ebenen:
+Jede Gleisebene ist als eigenständiges Modul in einer separaten Datei realisiert.
+Diese strikte Trennung sorgt dafür, dass Änderungen an einem Gleisplan keine Auswirkungen auf die Logik anderer Ebenen oder der Hauptanwendung haben.
+
+Wiederverwendbare Komponenten:
+Durch die Definition generischer Bausteine wie \texttt{TrackBlock} und \texttt{TrackSwitch} in der \texttt{Ablaufberg.kt} wurde eine Bibliothek von Steuerelementen geschaffen.
+Neue Gleiselemente können so ohne Redundanz durch einfaches Aufrufen dieser Funktionen mit den entsprechenden Parametern (ID und Koordinaten) hinzugefügt werden.
+
+Erweiterbarkeit:
+Das Hinzufügen einer komplett neuen Ebene erfordert lediglich drei Schritte:
+Das Erstellen einer neuen Datei mit der grafischen Definition, die Aufnahme in die zentrale Liste der Ebenen sowie die Ergänzung einer Verzweigung in der \texttt{when}-Anweisung der \texttt{MainActivity}.
+Da die Zustandsverwaltung (Maps) und die Netzwerklogik zentralisiert sind, muss für neue Ebenen kein neuer Backend-Code geschrieben werden.
+
+
+
+\subsection{Gestaltung der Benutzeroberfläche}
+Die grafische Benutzeroberfläche der App wurde mit dem deklarativen Framework \textit{Jetpack Compose} \cite{jetpackcompose} realisiert, wobei die Funktion \texttt{MainLayoutWrapper} innerhalb der \texttt{Main-Activity.kt} das grundlegende Skelett definiert.
+Das Layout ist funktional in drei horizontale Zonen unterteilt:
+einen Header für Navigation und Status, einen zentralen Inhaltsbereich für die Gleispläne und einen Footer für die globale Systemsteuerung.
+Durch die Nutzung von \texttt{Surface}-Komponenten und spezifischen Farbwerten für die verschiedenen Bereiche wird eine klare visuelle Trennung der Funktionszonen erreicht.
+Um eine optimale Darstellung auf verschiedenen Tablet-Modellen zu gewährleisten, werden Abstände zu den Systemleisten dynamisch über \texttt{WindowInsets} berücksichtigt.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{App.png}
+
+    \caption{Benutzeroberfläche in der Ansicht Ablaufberg.}
+    \label{fig:ui_ansicht}
+\end{figure}
+
+\subsubsection{Layout-Struktur und permanente Navigation}
+Der Header-Bereich bündelt zentrale Informationen und Navigationsmöglichkeiten.
+Ein zentrales Element ist das Dropdown-Menü, welches über die Liste \texttt{levels} die Auswahl zwischen dem Ablaufberg, der oberen Ebene und der mittleren Ebene ermöglicht.
+Flankiert wird dieses Menü von einer Statusanzeige, die über die Zustände \texttt{statusSent} und \texttt{statusReceived} den aktuellen Netzwerkverkehr visualisiert.
+Der Preset-Button ist zum jetzigen Stand lediglich ein Platzhalter.
+Im zentralen Inhaltsbereich wird eine \texttt{Row} verwendet, um die Methode \texttt{LiftControl} als permanent sichtbare Seitenleiste am linken Rand zu fixieren.
+Diese Komponente erlaubt dem Nutzer den schnellen Zugriff auf die Ebenenwahl des Lifts (L01 bis L03) sowie die Schaltung des spezifischen Lift-Streckenblocks B01, unabhängig davon, welcher Gleisplan gerade im restlichen Bereich angezeigt wird.
+
+\subsubsection{Interaktive Komponenten und visuelles Feedback}
+Die Darstellung der Gleisanlagen nutzt die Methoden \texttt{Ablauf\-berg}, \texttt{Mittlere\-Ebene} und \texttt{Obere\-Ebene}, welche die jeweiligen Hintergrundgrafiken laden und mit interaktiven Elementen überlagern.
+Für die Steuerung kommen die wiederverwendbaren Komponenten \texttt{Track\-Block} und \texttt{Track\-Switch} zum Einsatz.
+Ein \texttt{Track\-Block} zeigt neben der ID den aktuellen Zustand (ON/OFF) an und ändert seine Hintergrundfarbe reaktiv basierend auf der \texttt{block\-States}-Map von Rot (inaktiv) zu Grün (aktiv).
+Analog dazu signalisiert ein \texttt{Track\-Switch} den Weichenzustand durch Beschriftung (S für Straight, C für Curved) und einen Farbwechsel zwischen Dunkelblau und Orange.
+Diese direkte visuelle Kopplung an die zentralen Zustands-Maps ermöglicht dem Nutzer eine sofortige Kontrolle über die registrierten Schaltvorgänge in der App.
+
+\subsubsection{Systemstatus im Footer}
+Der Footer schließt das Interface ab und enthält die Bedienelemente für die Gesamtfunktion.
+Die Farbe des Verbindungs-Buttons wird direkt durch die Zustände \texttt{is\-Connected} und \texttt{is\-Connecting} gesteuert, wodurch der Nutzer zwischen einem aktiven (Grün), einem im Aufbau befindlichen (Orange) oder einem getrennten (Rot) Netzwerkstatus unterscheiden kann.
+
+Daneben signalisiert der Start/Stop-Button farblich den aktuellen Sicherheitsmodus der Anlage, welcher über den \texttt{is\-Emergency\-Stop\-Active}-Status gesteuert wird.
+Eine ergänzende Legende im mittleren Bereich des Footers informiert den Anwender zudem über die Bedeutung der Weichenkürzel, was die Bedienbarkeit der Software zusätzlich unterstützt.
+
+
+
+\subsection{Bedienung der App}
+Die Bedienung der App ist als geführter Prozess konzipiert, der den Anwender durch logische Abfolgen vor Fehlbedienungen schützt.
+
+\subsubsection{Verbindungsaufbau und Synchronisation}
+Der Betrieb beginnt mit der Herstellung der Netzwerkverbindung.
+Durch Betätigen des Verbindungs-Buttons im Footer initiiert der Nutzer den UDP-Broadcast.
+Während der Button von Rot auf Orange springt („Connecting“), wartet das System auf die Rückmeldung der Steuerrechner.
+Sobald die Verbindung stabil etabliert wurde und die Statusanzeige auf Grün wechselt, führt die App im Hintergrund automatisch eine Synchronisation der Weichenstellungen durch.
+Dieser Vorgang ist für den Anwender durch das mechanische Schalten der Hardware akustisch wahrnehmbar.
+Damit ist sichergestellt, dass die physische Anlage exakt der Softwarevorgabe entspricht.
+
+\subsubsection{Fahrwegvorbereitung im Stillstand}
+Nach erfolgreichem Verbindungsaufbau befindet sich das System automatisch im Sicherheitsmodus (Not-Aus aktiv).
+In dieser Phase kann der Nutzer über die Ebenenauswahl im Header zu den gewünschten Abschnitten navigieren.
+Durch Tippen auf die Weichen-Symbole (S/C) stellt der Anwender seinen Fahrweg zusammen.
+Da in diesem Modus noch keine Spannung an den Gleisblöcken anliegt, können Weichenstellungen gefahrlos verändert werden, ohne dass Züge unkontrolliert anfahren.
+Interaktionen mit den Streckenblöcken werden in dieser Phase lediglich in der App „vorgemerkt“, die Buttons ändern zwar ihre Farbe, die physische Anlage bleibt jedoch stromlos.
+
+\subsubsection{Freigabe und Fahrbetrieb}
+Sobald der Fahrweg vorbereitet ist, wechselt der Nutzer durch Betätigen des „Start“-Buttons im Footer in den Betriebsmodus.
+In diesem Moment werden alle zuvor in der App gesetzten Block-Zustände gesammelt an die Hardware übertragen.
+Die Anlage ist nun scharf geschaltet.
+Der Anwender kann jetzt die Züge durch Schalten der Streckenblöcke (ON/OFF) steuern.
+Das visuelle Feedback in der UI – der Wechsel zwischen Rot und Grün – dient dabei als direkte Bestätigung für den aktiven Stromfluss im jeweiligen Gleisabschnitt.
+
+\subsubsection{Vertikaler Ebenenwechsel und Lift-Steuerung}
+Für den Wechsel zwischen den physischen Ebenen nutzt der Bediener die permanente Lift-Steuerung am linken Bildschirmrand.
+Da diese Komponente unabhängig vom gewählten Gleisplan eingeblendet bleibt, kann der Nutzer den Lift jederzeit auf eine der drei Ziel-Ebenen (L01–L03) schicken.
+Sobald der Lift seine Position erreicht hat, kann der auf dem Lift befindliche Streckenblock (B01) aktiviert werden, um den Zug in die neue Ebene ein- oder ausfahren zu lassen.
+
+\subsubsection{Sicherheit und Beendigung}
+Sollte während des Betriebs eine kritische Situation auftreten, ermöglicht der zentrale Not-Aus-Button im Footer jederzeit die sofortige Rückkehr in den Sicherheitsmodus, wodurch alle Streckenblöcke unverzüglich stromlos geschaltet werden.
+Zum ordnungsgemäßen Beenden der Sitzung trennt der Nutzer die Verbindung über den Verbindungs-Button.
+Ein besonderes Sicherheitsmerkmal ist der automatische Abbruch.
+Sollte der Nutzer die App während des Fahrbetriebs verlassen oder minimieren, löst die Software selbstständig einen Notstopp aus, um die Anlage vor unbeaufsichtigten Bewegungen zu schützen.
+
+
+\section{Evaluation}
+Im Rahmen der Evaluation wurde die entwickelte Steuerungssoftware einem umfassenden Praxistest an der Modellanlage unterzogen.
+Ziel war es, die theoretischen Konzepte der Software-Architektur sowie die Implementierung der Sicherheitsmechanismen unter realen Betriebsbedingungen zu validieren.
+
+\subsubsection{Funktionale Validierung und Konsistenz}
+Ein zentraler Aspekt der Evaluation war die Überprüfung der App als alleiniger Zustandsverwalter (Single Source of Truth).
+In den Testläufen konnte bestätigt werden, dass die initiale Synchronisation über die Funktion \texttt{forceSyncSwitches()} zuverlässig arbeitet.
+Der Anwender erhält durch das mechanische Schalten der Weichen eine unmittelbare akustische Rückmeldung, wodurch die Konsistenz zwischen der digitalen Map und der physischen Anlage sichergestellt wird.
+Die künstlich eingefügte Verzögerung von 500ms zwischen den UDP‑Paketen erwies sich als effektiv, um Paketverluste zu vermeiden, ein Fehlverhalten der Weichen zu verhindern und eine lückenlose Abarbeitung der Befehle durch die Steuerrechner zu gewährleisten.
+
+\subsubsection{Überprüfung der Sicherheitsmechanismen}
+Die mehrstufige Sicherheitslogik wurde gezielt auf ihre Belastbarkeit geprüft.
+Der implementierte Watchdog trennte die Verbindung in den Testreihen zuverlässig, sobald die Netzwerkverbindung künstlich unterbrochen wurde oder die Antwortzeiten der Hardware das definierte Zeitfenster von 25 Sekunden überschritten.
+Besonders hervorzuheben ist die Reaktivität des automatischen Nothalts:
+Das Auslösen der \texttt{onPause}-Methode beim Minimieren der App führte ausnahmslos zu einer sofortigen Deaktivierung aller Streckenblöcke.
+Damit wurde das Ziel erreicht, die Anlage auch bei unvorhergesehenen Nutzerereignissen in einen sicheren Zustand zu versetzen.
+
+\subsubsection{Bedienbarkeit und Responsivität}
+Die Evaluation des Bedienkonzepts bestätigte den Nutzen der zweistufigen Freigabelogik.
+Durch die Trennung von Fahrwegvorbereitung und Fahrbetrieb konnten Fehlbedienungen, wie das versehentliche Anfahren von Zügen bei falsch gestellten Weichen, erfolgreich vermieden werden.
+Die responsive UI-Architektur wurde auf verschiedenen Endgeräten emuliert.
+Hierbei zeigte sich, dass das System der relativen Koordinaten die interaktiven Steuerelemente präzise auf den Gleisplänen verankert, unabhängig von der jeweiligen Displayauflösung.
+Die permanente Sichtbarkeit der Lift-Steuerung am linken Rand erwies sich in der Praxis als großer Vorteil für die Effizienz des Ebenenwechsels, da keine Menüwechsel erforderlich waren, um die vertikale Achse der Anlage zu kontrollieren.
+
+\subsubsection{Zusammenfassung der Ergebnisse}
+Zusammenfassend lässt sich festhalten, dass die Software alle gestellten Anforderungen erfüllt.
+Die gewählte Architektur bietet eine stabile und wartbare Basis für den Testbetrieb.
+Die Kombination aus reaktiver Zustandsverwaltung in Jetpack Compose und der strikten Sicherheitslogik im Hintergrund ermöglicht eine intuitive, aber dennoch kontrollierte Steuerung der komplexen Modellanlage.
+Für zukünftige Erweiterungen bietet die modulare Struktur der App zudem ausreichend Spielraum, um weitere Anlagenteile oder automatisierte Abläufe ohne grundlegende Änderungen am Systemkern zu integrieren.
+
+\section{Anhang}
+\subsection{Installation der App}
+Da die App als Prototyp entwickelt wurde, erfolgt die Installation direkt über die Entwicklungsumgebung auf das Zielgerät. Der Prozess gliedert sich in folgende Schritte:
+
+\begin{enumerate}
+    \item Zunächst wird der Projektordner in Android Studio geöffnet. Das Build-System \textit{Gradle} führt daraufhin eine automatische Synchronisation durch, um benötigte Abhängigkeiten wie Jetpack Compose und die Android-Systembibliotheken zu laden.
+    
+    \item Am bereitgestellten Android-Tablet müssen vorab die \textit{Entwickleroptionen} sowie das \textit{USB-Debugging} in den Systemeinstellungen aktiviert werden, um die Installation über eine externe Schnittstelle zu ermöglichen.
+    
+    \item Die eigentliche Übertragung erfolgt über eine USB-Verbindung zwischen dem Entwicklungsrechner und dem Tablet. In der Toolbar von Android Studio wird das Tablet als Zielgerät ausgewählt. Durch Betätigen des \textit{Run}-Buttons wird der Quellcode kompiliert, in eine APK-Datei verpackt und automatisiert auf dem Endgerät installiert.
+    
+    \item Abschließend muss sichergestellt werden, dass das Tablet mit dem WLAN-Netzwerk \textit{eisenbahn} verbunden ist, da die App für die Kommunikation mit der Modellanlage auf Netzwerk-Broadcasts angewiesen ist.
+\end{enumerate}
+
+Alternativ bietet Android Studio über den Pfad \textit{Build} $\rightarrow$ \textit{Generate App Bundles or APKs} $\rightarrow$ \textit{Generate APKs} die Möglichkeit, eine eigenständige Installationsdatei zu exportieren. Diese kann manuell auf das Tablet kopiert werden, erfordert jedoch in den Sicherheitseinstellungen die explizite Freigabe für die Installation aus \textit{unbekannten Quellen}.
+
+\subsection{Programmierwerkzeuge}
+Für die Entwicklung der Android-App und die Erstellung der vorliegenden Dokumentation wurden folgende Werkzeuge eingesetzt:
+
+\begin{itemize}
+    \item Entwicklungsumgebung: Android Studio Otter 2 (2025.2.2 Patch 1)
+    \item Programmiersprache: Kotlin Version 2.0.21
+    \item Laufzeitumgebung: Java Development Kit (JDK) 21
+    \item Framework: Jetpack Compose (BOM Version 2024.09.00)
+    \item Build-System: Gradle Version 8.13 mit Android Gradle Plugin 8.12.0
+    \item SDK-Konfiguration: Android SDK (Compile \& Target SDK Level 36)
+    \item Textsatz: \LaTeX\ (Editor: Overleaf)
+    \item Versionsverwaltung: Git
+\end{itemize}
+
+
+
+\section{Quellenverzeichnis}
+\begingroup
+\renewcommand{\section}[2]{}
+
+\begin{thebibliography}{9}
+
+\bibitem{jetpackcompose}
+Android Developers.
+\emph{Jetpack Compose overview}.
+\url{https://developer.android.com/jetpack/compose}, 2026.
+
+\end{thebibliography}
+\endgroup
+
+
+\end{document}
